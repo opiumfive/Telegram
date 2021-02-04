@@ -4,3 +4,5 @@ build/
 obj/
 *.iml
 local.properties
+/TMessagesProj/src/main/ic_launcher-playstore.png
+/TMessagesProj/.cxx/
