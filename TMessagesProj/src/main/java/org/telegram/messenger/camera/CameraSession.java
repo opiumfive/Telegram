@@ -116,7 +116,7 @@ public class CameraSession {
     }
 
     public void checkFlashMode(String mode) {
-        ArrayList<String> modes = CameraController.getInstance().getAvailableFlashModes();
+        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
         if (modes.contains(currentFlashMode)) {
             return;
         }
@@ -147,7 +147,7 @@ public class CameraSession {
     }
 
     public String getNextFlashMode() {
-        ArrayList<String> modes = CameraController.getInstance().getAvailableFlashModes();
+        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
         for (int a = 0; a < modes.size(); a++) {
             String mode = modes.get(a);
             if (mode.equals(currentFlashMode)) {

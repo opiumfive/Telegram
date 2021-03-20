@@ -1244,10 +1244,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (!recording) {
                 videoEncoder.startRecording(cameraFile, EGL14.eglGetCurrentContext());
                 recording = true;
-                if (CameraController.getInstance().isCamera2Used) {
-                    scaleX = 1.0f;
-                    scaleY = 1.0f;
-                }
                 int orientation = currentSession.getCurrentOrientation();
                 if (orientation == 90 || orientation == 270) {
                     float temp = scaleX;
