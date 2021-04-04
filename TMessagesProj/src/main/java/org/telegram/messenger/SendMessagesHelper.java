@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -318,6 +319,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public HashMap<String, String> params;
         public boolean isVideo;
         public boolean canDeleteAfter;
+    }
+
+    public static class SendingMediaInfoWithRect extends SendingMediaInfo {
+        public Rect rect;
     }
 
     public static class LocationProvider {

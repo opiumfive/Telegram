@@ -3,9 +3,7 @@ package org.telegram.ui;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -18,13 +16,14 @@ import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.ChatActivityEnterView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationItemType;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParamType;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParams;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParamsHolder;
 import org.telegram.ui.Components.RecyclerListView;
 
 public class VoiceMessageEnterTransition {
@@ -34,12 +33,14 @@ public class VoiceMessageEnterTransition {
     float progress;
 
     final Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
+    private final AnimationParams animationParams;
     private final ValueAnimator animator;
 
     public VoiceMessageEnterTransition(FrameLayout containerView, ChatMessageCell messageView, ChatActivityEnterView chatActivityEnterView, RecyclerListView listView) {
 
         fromRadius = chatActivityEnterView.getRecordCicle().drawingCircleRadius;
+
+        animationParams = AnimationParamsHolder.instance.getAnimationParamsForType(AnimationItemType.VoiceMessage);
 
         messageView.setVoiceTransitionInProgress(true);
 
@@ -87,11 +88,13 @@ public class VoiceMessageEnterTransition {
                 lastToCx = toCx;
                 lastToCy = toCy;
 
-                float progress = CubicBezierInterpolator.DEFAULT.getInterpolation(moveProgress);
-                float xProgress = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(moveProgress);
+                float progress = animationParams.getInterpolation(AnimationParamType.VoiceScale).getAnimationValue(0, 1.0f, moveProgress);
+                //CubicBezierInterpolator.DEFAULT.getInterpolation(moveProgress);
+                float xProgress = animationParams.getInterpolation(AnimationParamType.XPosition).getAnimationValue(0, 1.0f, moveProgress);
+                float yProgress = animationParams.getInterpolation(AnimationParamType.YPosition).getAnimationValue(0, 1.0f, moveProgress);
 
                 float cx = fromCx * (1f - xProgress) + toCx * xProgress;
-                float cy = fromCy * (1f - progress) + toCy * progress;
+                float cy = fromCy * (1f - yProgress) + toCy * yProgress;
 
                 float toRadius = messageView.getRadialProgress().getProgressRect().height() / 2;
                 float radius = fromRadius * (1f - progress) + toRadius * progress;
@@ -153,7 +156,7 @@ public class VoiceMessageEnterTransition {
         });
 
         animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(220);
+        animator.setDuration(animationParams.getDurationMs()+250);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {

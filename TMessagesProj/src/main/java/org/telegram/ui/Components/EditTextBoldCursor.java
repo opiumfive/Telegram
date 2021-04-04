@@ -495,6 +495,16 @@ public class EditTextBoldCursor extends EditText {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        int paintAlpha = getPaint().getAlpha();
+        boolean showHideHint = false;
+        if (length() == 0) {
+            hintVisible = true;
+            showHideHint = true;
+        } else if (hintAlpha > 0) {
+            getPaint().setAlpha( 255 * (int)(1 - hintAlpha));
+            hintVisible = false;
+            showHideHint = true;
+        }
         int topPadding = getExtendedPaddingTop();
         scrollY = Integer.MAX_VALUE;
         try {
@@ -524,7 +534,8 @@ public class EditTextBoldCursor extends EditText {
             }
         }
         canvas.restore();
-        if ((length() == 0 || transformHintToHeader) && hintLayout != null && (hintVisible || hintAlpha != 0)) {
+        getPaint().setAlpha(paintAlpha);
+        if ((showHideHint || transformHintToHeader) && hintLayout != null && (hintVisible || hintAlpha != 0)) {
             if (hintVisible && hintAlpha != 1.0f || !hintVisible && hintAlpha != 0.0f) {
                 long newTime = System.currentTimeMillis();
                 long dt = newTime - lastUpdateTime;

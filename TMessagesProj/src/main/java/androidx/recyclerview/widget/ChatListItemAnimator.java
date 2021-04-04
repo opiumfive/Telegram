@@ -49,6 +49,19 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     private boolean reversePositions;
 
+    private ArrayList<ChatMessageCell> cellsAnimatingIntoList = new ArrayList<>();
+
+    private long scrollDuration = 0;
+    public void setScrollDuration(long scrollDuration) {
+        this.scrollDuration = scrollDuration;
+    }
+
+    @Override
+    public long getMoveDuration() {
+        if (scrollDuration != 0) return scrollDuration;
+        return 220;
+    }
+
     public ChatListItemAnimator(ChatActivity activity, RecyclerListView listView) {
         this.activity = activity;
         this.recyclerListView = listView;
@@ -586,6 +599,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 chatMessageCell.getTransitionParams().animateChangeProgress = 0f;
             }
 
+            if (!(view instanceof ChatMessageCell) || !((ChatMessageCell)view).isAnimatingSendingMessage())
             if (deltaX == 0 && deltaY == 0 && !moveInfo.animateImage && !moveInfo.animateRemoveGroup && !moveInfo.animateChangeGroupBackground && !moveInfo.animatePinnedBottom && !moveInfo.animateBackgroundOnly && !moveInfo.animateChangeInternal) {
                 dispatchMoveFinished(holder);
                 return false;
@@ -784,6 +798,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animator) {
+                if (!cellsAnimatingIntoList.contains(view) && view instanceof ChatMessageCell  &&((ChatMessageCell) view).isAnimatingSendingMessage()) {
+                    cellsAnimatingIntoList.add((ChatMessageCell) view);
+                }
                 dispatchMoveStarting(holder);
             }
 
@@ -971,6 +988,11 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             FileLog.d("all animations done");
         }
 
+        for (ChatMessageCell cell : cellsAnimatingIntoList) {
+            cell.endAnimationMove();
+        }
+        cellsAnimatingIntoList.clear();
+
         recyclerListView.setClipChildren(true);
         while (!runOnAnimationsEnd.isEmpty()) {
             runOnAnimationsEnd.remove(0).run();
@@ -981,6 +1003,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private void cancelAnimators() {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("cancel animations");
+        }
+
+        for (ChatMessageCell cell : cellsAnimatingIntoList) {
+            cell.endAnimationMove();
         }
         ArrayList<Animator> anim = new ArrayList<>(animators.values());
         animators.clear();
@@ -1372,11 +1398,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     protected long getMoveAnimationDelay() {
         return 0;
-    }
-
-    @Override
-    public long getMoveDuration() {
-        return 220;
     }
 
     @Override

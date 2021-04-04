@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.MessageAnimations.Editor.MessageAnimationEditorActivity;
 import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
 
@@ -214,7 +215,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 System.arraycopy(sharedMediaPreloader.getLastMediaCount(), 0, media, 0, media.length);
                 MediaActivity fragment = new MediaActivity(args, media, sharedMediaPreloader.getSharedMediaData(), -1);
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-                parentFragment.presentFragment(fragment);
+                //parentFragment.presentFragment(fragment);
+                parentFragment.presentFragment(new MessageAnimationEditorActivity());
             } else {
                 args.putInt("user_id", user.id);
                 args.putBoolean("reportSpam", parentFragment.hasReportSpam());
@@ -224,7 +226,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
                 fragment.setUserInfo(parentFragment.getCurrentUserInfo());
                 fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
-                parentFragment.presentFragment(fragment);
+                //parentFragment.presentFragment(fragment);
+                parentFragment.presentFragment(new MessageAnimationEditorActivity());
             }
         } else if (chat != null) {
             Bundle args = new Bundle();
@@ -232,7 +235,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             fragment.setChatInfo(parentFragment.getCurrentChatInfo());
             fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
-            parentFragment.presentFragment(fragment);
+            //parentFragment.presentFragment(fragment);
+            parentFragment.presentFragment(new MessageAnimationEditorActivity());
         }
     }
 

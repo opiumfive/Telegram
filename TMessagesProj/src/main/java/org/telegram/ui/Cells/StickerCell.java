@@ -31,6 +31,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationItemType;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParamsHolder;
 
 public class StickerCell extends FrameLayout {
 
@@ -40,7 +42,10 @@ public class StickerCell extends FrameLayout {
     private long lastUpdateTime;
     private boolean scaled;
     private float scale;
+    private float alpha = 1;
     private long time = 0;
+    private boolean reanimating = false;
+    private long reanimateDuration = 1000;
     private boolean clearsInputField;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
 
@@ -136,6 +141,18 @@ public class StickerCell extends FrameLayout {
         invalidate();
     }
 
+    public void needReanimate() {
+        reanimating = true;
+        reanimateDuration = AnimationParamsHolder.instance.getAnimationParamsForType(AnimationItemType.Sticker).getDurationMs();
+        alpha = 0.0f;
+        time = 0;
+        scale = 0.01f;
+        imageView.getImageReceiver().setAlpha(alpha);
+        imageView.invalidate();
+        lastUpdateTime = System.currentTimeMillis();
+        invalidate();
+    }
+
     public boolean showingBitmap() {
         return imageView.getImageReceiver().getBitmap() != null;
     }
@@ -143,11 +160,26 @@ public class StickerCell extends FrameLayout {
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         boolean result = super.drawChild(canvas, child, drawingTime);
-        if (child == imageView && (scaled && scale != 0.8f || !scaled && scale != 1.0f)) {
+        if (child == imageView && (reanimating || scaled && scale != 0.8f || !scaled && scale != 1.0f)) {
             long newTime = System.currentTimeMillis();
             long dt = (newTime - lastUpdateTime);
             lastUpdateTime = newTime;
-            if (scaled && scale != 0.8f) {
+            if (reanimating) {
+                time += dt;
+                if (time > reanimateDuration) {
+                    time = reanimateDuration;
+                }
+                alpha = interpolator.getInterpolation(1f * time / reanimateDuration);
+                if (alpha >= 1.0f) {
+                    reanimating = false;
+                    alpha = 1.0f;
+                }
+                imageView.getImageReceiver().setAlpha(alpha);
+                scale += 1f * dt / (reanimateDuration - 100);
+                if (scale > 1.0f) {
+                    scale = 1.0f;
+                }
+            } else if (scaled && scale != 0.8f) {
                 scale -= dt / 400.0f;
                 if (scale < 0.8f) {
                     scale = 0.8f;

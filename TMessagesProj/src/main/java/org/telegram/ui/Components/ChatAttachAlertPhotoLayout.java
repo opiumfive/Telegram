@@ -147,6 +147,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private static boolean mediaFromExternalCamera;
     private static ArrayList<Object> cameraPhotos = new ArrayList<>();
     private static HashMap<Object, Object> selectedPhotos = new HashMap<>();
+    private static HashMap<Object, Rect> selectedPhotosRect = new HashMap<>();
     private static ArrayList<Object> selectedPhotosOrder = new ArrayList<>();
     private static int lastImageId = -1;
     private boolean cancelTakingPhotos;
@@ -1003,6 +1004,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         Object key = object.imageId;
         if (selectedPhotos.containsKey(key)) {
             selectedPhotos.remove(key);
+            if (selectedPhotosRect.containsKey(key)) selectedPhotosRect.remove(key);
             int position = selectedPhotosOrder.indexOf(key);
             if (position >= 0) {
                 selectedPhotosOrder.remove(position);
@@ -1017,6 +1019,30 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         } else {
             selectedPhotos.put(key, object);
             selectedPhotosOrder.add(key);
+
+            int count = gridView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = gridView.getChildAt(a);
+                if (view instanceof PhotoAttachPhotoCell) {
+                    int tag = (Integer) view.getTag();
+                    if (tag == index) {
+                        selectedPhotosRect.put(key, new Rect(view.getLeft(), view.getTop(), view.getRight(), view.getBottom()));
+                        break;
+                    }
+                }
+            }
+            count = cameraPhotoRecyclerView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = cameraPhotoRecyclerView.getChildAt(a);
+                if (view instanceof PhotoAttachPhotoCell) {
+                    int tag = (Integer) view.getTag();
+                    if (tag == index) {
+
+                        break;
+                    }
+                }
+            }
+
             updatePhotosCounter(true);
             return -1;
         }
@@ -1030,6 +1056,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             selectedPhotos.clear();
             selectedPhotosOrder.clear();
+            selectedPhotosRect.clear();
         }
         if (!cameraPhotos.isEmpty()) {
             for (int a = 0, size = cameraPhotos.size(); a < size; a++) {
@@ -2154,6 +2181,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     public HashMap<Object, Object> getSelectedPhotos() {
         return selectedPhotos;
+    }
+
+    public HashMap<Object, Rect> getSelectedPhotosRects() {
+        return selectedPhotosRect;
     }
 
     public ArrayList<Object> getSelectedPhotosOrder() {

@@ -1637,6 +1637,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return;
                 }
                 cell.disable();
+                cell.needReanimate();
                 delegate.onStickerSelected(cell, cell.getSticker(), query, cell.getParentObject(), true, 0);
             };
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
