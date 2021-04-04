@@ -58,6 +58,9 @@ import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MessageAnimations.Animation.ChatMessageCellAnimated;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationItemType;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParamsHolder;
 
 import java.util.ArrayList;
 
@@ -172,7 +175,7 @@ public class BottomSheet extends Dialog {
         public ContainerView(Context context) {
             super(context);
             nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
-            setWillNotDraw(false);
+            setWillNotDraw(true);
         }
 
         @Override
@@ -1243,13 +1246,15 @@ public class BottomSheet extends Dialog {
                     ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, containerView.getMeasuredHeight() + container.keyboardHeight + AndroidUtilities.dp(10)),
                     ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0)
             );
+            long dur = AnimationParamsHolder.instance.getAnimationParamsForType(AnimationItemType.Attachment).getDurationMs() / 2;
+            if (dur < 150) dur = 150;
             if (useFastDismiss) {
                 int height = containerView.getMeasuredHeight();
-                duration = Math.max(60, (int) (250 * (height - containerView.getTranslationY()) / (float) height));
+                duration = Math.max(60, (int) (dur * (height - containerView.getTranslationY()) / (float) height));
                 currentSheetAnimation.setDuration(duration);
                 useFastDismiss = false;
             } else {
-                currentSheetAnimation.setDuration(duration = 250);
+                currentSheetAnimation.setDuration(duration = dur);
             }
             currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
             currentSheetAnimation.addListener(new AnimatorListenerAdapter() {

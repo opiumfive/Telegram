@@ -140,7 +140,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private boolean requestingPermissions;
     private File cameraFile;
     private long recordStartTime;
-    private boolean recording;
+    public boolean recording;
     private long recordedTime;
     private boolean cancelled;
 

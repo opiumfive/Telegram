@@ -175,6 +175,7 @@ public class MessageObject {
 
     public ArrayList<String> highlightedWords;
     public String messageTrimmedToHighlight;
+    public boolean animateSendingMessage = false;
 
     static final String[] excludeWords = new String[] {
             " vs. ",

@@ -2840,7 +2840,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
         }
         if (commentTextView != null) {
-            AndroidUtilities.hideKeyboard(commentTextView.getEditText());
+            //AndroidUtilities.hideKeyboard(commentTextView.getEditText());
         }
         super.dismiss();
     }

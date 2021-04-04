@@ -115,6 +115,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -346,6 +347,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private boolean scheduleButtonHidden;
     private AnimatorSet scheduledButtonAnimation;
     private RecordCircle recordCircle;
+    public Rect lastStickerClickedRect = new Rect();
     private CloseProgressDrawable2 progressDrawable;
     private Paint dotPaint;
     private MediaActionDrawable playPauseDrawable;
@@ -576,6 +578,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 if (!recordingAudioVideo) {
                     recordingAudioVideo = true;
+
                     updateRecordIntefrace(RECORD_STATE_ENTER);
                     recordCircle.showWaves(false, false);
                     recordTimerView.reset();
@@ -6119,6 +6122,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     setStickersExpanded(false, true, false);
                 }
+                if (view instanceof StickerEmojiCell) {
+                    ChatActivityEnterView.this.lastStickerClickedRect.set(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
+                } else {
+                    ChatActivityEnterView.this.lastStickerClickedRect.set(0, 0, 0, 0);
+                }
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {
                     accountInstance.getMessagesController().saveGif(parent, sticker);
@@ -6149,6 +6157,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         }
                         setStickersExpanded(false, true, false);
                     }
+                    ChatActivityEnterView.this.lastStickerClickedRect.set(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
                     if (gif instanceof TLRPC.Document) {
                         TLRPC.Document document = (TLRPC.Document) gif;
                         SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialog_id, replyingMessageObject, getThreadMessage(), parent, notify, scheduleDate);
@@ -7922,5 +7931,28 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public RecordCircle getRecordCicle() {
         return recordCircle;
+    }
+
+    public void getTextEditBounds(Rect rect) {
+        rect.set(getLeft() + textFieldContainer.getLeft() + messageEditText.getLeft(),
+                getTop() + textFieldContainer.getTop() + messageEditText.getTop(),
+                getLeft() + textFieldContainer.getLeft() + messageEditText.getRight(),
+                getTop() + textFieldContainer.getTop() + messageEditText.getBottom());
+    }
+
+    public void getStickerBounds(Rect rect) {
+        rect.set(getLeft() + lastStickerClickedRect.left,
+                getTop() + lastStickerClickedRect.top,
+                getLeft() + lastStickerClickedRect.right,
+                getBottom() +  lastStickerClickedRect.bottom);
+    }
+
+    public int getAddedHeight() {
+        if (topView.getVisibility() != VISIBLE) return 0;
+        return topView.getHeight();
+    }
+
+    public EditTextCaption getMessageEditText() {
+        return messageEditText;
     }
 }

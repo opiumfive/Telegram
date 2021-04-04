@@ -33,6 +33,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationItemType;
+import org.telegram.ui.Components.MessageAnimations.Editor.data.AnimationParamsHolder;
 
 public class StickerEmojiCell extends FrameLayout {
 
@@ -41,6 +43,8 @@ public class StickerEmojiCell extends FrameLayout {
     private Object parentObject;
     private TextView emojiTextView;
     private float alpha = 1;
+    private boolean reanimating = false;
+    private long reanimateDuration = 1000;
     private boolean changingAlpha;
     private long lastUpdateTime;
     private boolean scaled;
@@ -150,6 +154,18 @@ public class StickerEmojiCell extends FrameLayout {
         invalidate();
     }
 
+    public void needReanimate() {
+        reanimating = true;
+        reanimateDuration = AnimationParamsHolder.instance.getAnimationParamsForType(AnimationItemType.Sticker).getDurationMs();
+        alpha = 0.0f;
+        time = 0;
+        scale = 0.01f;
+        imageView.getImageReceiver().setAlpha(alpha);
+        imageView.invalidate();
+        lastUpdateTime = System.currentTimeMillis();
+        invalidate();
+    }
+
     public void setScaled(boolean value) {
         scaled = value;
         lastUpdateTime = System.currentTimeMillis();
@@ -177,11 +193,26 @@ public class StickerEmojiCell extends FrameLayout {
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         boolean result = super.drawChild(canvas, child, drawingTime);
-        if (child == imageView && (changingAlpha || scaled && scale != 0.8f || !scaled && scale != 1.0f)) {
+        if (child == imageView && (reanimating || changingAlpha || scaled && scale != 0.8f || !scaled && scale != 1.0f)) {
             long newTime = System.currentTimeMillis();
             long dt = (newTime - lastUpdateTime);
             lastUpdateTime = newTime;
-            if (changingAlpha) {
+            if (reanimating) {
+                time += dt;
+                if (time > reanimateDuration) {
+                    time = reanimateDuration;
+                }
+                alpha = interpolator.getInterpolation(1f * time / reanimateDuration);
+                if (alpha >= 1.0f) {
+                    reanimating = false;
+                    alpha = 1.0f;
+                }
+                imageView.getImageReceiver().setAlpha(alpha);
+                scale += 1f * dt / (reanimateDuration - 100);
+                if (scale > 1.0f) {
+                    scale = 1.0f;
+                }
+            } else if (changingAlpha) {
                 time += dt;
                 if (time > 1050) {
                     time = 1050;
