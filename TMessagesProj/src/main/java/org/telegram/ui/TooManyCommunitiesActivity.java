@@ -67,7 +67,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
 
     private int buttonAnimation;
 
-    private Set<Integer> selectedIds = new HashSet<>();
+    private Set<Long> selectedIds = new HashSet<>();
 
     private TooManyCommunitiesHintCell hintCell;
 
@@ -267,7 +267,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
             for (int i = 0; i < chats.size(); i++) {
                 TLRPC.Chat chat = chats.get(i);
                 getMessagesController().putChat(chat, false);
-                getMessagesController().deleteUserFromChat(chat.id, currentUser, null);
+                getMessagesController().deleteParticipantFromChat(chat.id, currentUser, null);
             }
             finishFragment();
         });

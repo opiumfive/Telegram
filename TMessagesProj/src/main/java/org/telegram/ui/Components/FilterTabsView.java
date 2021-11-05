@@ -1134,8 +1134,12 @@ public class FilterTabsView extends FrameLayout {
                 }
             }
             if (indicatorWidth != 0) {
+                canvas.save();
+                canvas.translate(listView.getTranslationX(), 0);
+                canvas.scale(listView.getScaleX(), 1f, listView.getPivotX() + listView.getX(), listView.getPivotY());
                 selectorDrawable.setBounds((int) indicatorX, height - AndroidUtilities.dpr(4), (int) (indicatorX + indicatorWidth), height);
                 selectorDrawable.draw(canvas);
+                canvas.restore();
             }
         }
         long newTime = SystemClock.elapsedRealtime();
@@ -1204,7 +1208,10 @@ public class FilterTabsView extends FrameLayout {
             additionalTabWidth = trueTabsWidth < width ? (width - trueTabsWidth) / tabs.size() : 0;
             if (prevWidth != additionalTabWidth) {
                 ignoreLayout = true;
+                RecyclerView.ItemAnimator animator = listView.getItemAnimator();
+                listView.setItemAnimator(null);
                 adapter.notifyDataSetChanged();
+                listView.setItemAnimator(animator);
                 ignoreLayout = false;
             }
             updateTabsWidths();
@@ -1524,5 +1531,9 @@ public class FilterTabsView extends FrameLayout {
             viewHolder.itemView.setPressed(false);
             viewHolder.itemView.setBackground(null);
         }
+    }
+
+    public RecyclerListView getListView() {
+        return listView;
     }
 }

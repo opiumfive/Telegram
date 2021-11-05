@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<<<<<<< HEAD:TMessagesProj/src/main/res/layout/shortcut_widget_layout_1.xml
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="90dp"
+    android:layout_height="76dp"
     android:background="@drawable/widget_bg"
     android:padding="2dp">
+=======
+    style="@style/TMessages.AppWidget.Background"
+    android:layout_width="match_parent"
+    android:layout_height="90dp"
+    android:orientation="vertical"
+    android:theme="@style/Theme.TMessages.AppWidget">
+>>>>>>> master:TMessagesProj/src/main/res/layout/contacts_widget_layout_1.xml
 
     <ListView android:id="@+id/list_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:dividerHeight="0px"
+<<<<<<< HEAD:TMessagesProj/src/main/res/layout/shortcut_widget_layout_1.xml
+        android:listSelector="@drawable/list_selector_ex"
+=======
+>>>>>>> master:TMessagesProj/src/main/res/layout/contacts_widget_layout_1.xml
         android:scrollbars="none"
         android:divider="#00000000"/>
 

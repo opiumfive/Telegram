@@ -9,25 +9,20 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Random;
 
-public class ChatGreetingsView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ChatGreetingsView extends LinearLayout {
 
     private TLRPC.Document preloadedGreetingsSticker;
     private TextView titleView;
@@ -37,12 +32,13 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
     private final int currentAccount;
 
     public BackupImageView stickerToSendView;
+    private final Theme.ResourcesProvider resourcesProvider;
 
-
-    public ChatGreetingsView(Context context, TLRPC.User user, int distance, int currentAccount, TLRPC.Document preloadedGreetingsSticker) {
+    public ChatGreetingsView(Context context, TLRPC.User user, int distance, int currentAccount, TLRPC.Document sticker, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         setOrientation(VERTICAL);
         this.currentAccount = currentAccount;
+        this.resourcesProvider = resourcesProvider;
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -70,16 +66,17 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
             descriptionView.setText(LocaleController.getString("NearbyPeopleGreetingsDescription", R.string.NearbyPeopleGreetingsDescription));
         }
 
-        this.preloadedGreetingsSticker = preloadedGreetingsSticker;
-
+        preloadedGreetingsSticker = sticker;
         if (preloadedGreetingsSticker == null) {
-            MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
-        } else {
-            setSticker(preloadedGreetingsSticker);
+            preloadedGreetingsSticker = MediaDataController.getInstance(currentAccount).getGreetingsSticker();
         }
+        setSticker(preloadedGreetingsSticker);
     }
 
     private void setSticker(TLRPC.Document sticker) {
+        if (sticker == null) {
+            return;
+        }
         SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(sticker, Theme.key_chat_serviceBackground, 1.0f);
         if (svgThumb != null) {
             stickerToSendView.setImage(ImageLocation.getForDocument(sticker), createFilter(sticker), svgThumb, 0, sticker);
@@ -133,9 +130,8 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
     }
 
     private void updateColors() {
-        titleView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
-        descriptionView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
-        setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.getColor(Theme.key_chat_serviceBackground)));
+        titleView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
+        descriptionView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
     }
 
     public void setListener(Listener listener) {
@@ -177,26 +173,22 @@ public class ChatGreetingsView extends LinearLayout implements NotificationCente
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         fetchSticker();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.greetingsStickerLoaded);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.greetingsStickerLoaded);
     }
 
     private void fetchSticker() {
         if (preloadedGreetingsSticker == null) {
-            preloadedGreetingsSticker = MessagesController.getInstance(currentAccount).getPreloadedSticker();
-            if (preloadedGreetingsSticker != null) {
-                setSticker(preloadedGreetingsSticker);
-            }
+            preloadedGreetingsSticker = MediaDataController.getInstance(currentAccount).getGreetingsSticker();
+            setSticker(preloadedGreetingsSticker);
         }
     }
 
-    @Override
-    public void didReceivedNotification(int id, int account, Object... args) {
-        fetchSticker();
+    private int getThemedColor(String key) {
+        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
+        return color != null ? color : Theme.getColor(key);
     }
 }

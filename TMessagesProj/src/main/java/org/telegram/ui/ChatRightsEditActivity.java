@@ -73,7 +73,7 @@ public class ChatRightsEditActivity extends BaseFragment {
     private ListAdapter listViewAdapter;
     private RecyclerListView listView;
 
-    private int chatId;
+    private long chatId;
     private TLRPC.User currentUser;
     private TLRPC.Chat currentChat;
     private int currentType;
@@ -133,7 +133,7 @@ public class ChatRightsEditActivity extends BaseFragment {
 
     private final static int done_button = 1;
 
-    public ChatRightsEditActivity(int userId, int channelId, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBannedDefault, TLRPC.TL_chatBannedRights rightsBanned, String rank, int type, boolean edit, boolean addingNew) {
+    public ChatRightsEditActivity(long userId, long channelId, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBannedDefault, TLRPC.TL_chatBannedRights rightsBanned, String rank, int type, boolean edit, boolean addingNew) {
         super();
         isAddingNew = addingNew;
         chatId = channelId;
@@ -314,7 +314,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             }
             if (position == 0) {
                 Bundle args = new Bundle();
-                args.putInt("user_id", currentUser.id);
+                args.putLong("user_id", currentUser.id);
                 presentFragment(new ProfileActivity(args));
             } else if (position == removeAdminRow) {
                 if (currentType == TYPE_ADMIN) {
@@ -926,7 +926,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                         adminRights.other ? 1 : 0, adminRights, bannedRights, currentRank);
             }
         } else if (currentType == TYPE_BANNED) {
-            MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(1));
+            MessagesController.getInstance(currentAccount).setParticipantBannedRole(chatId, currentUser, null, bannedRights, isChannel, getFragmentForAlert(1));
             int rights;
             if (bannedRights.send_messages || bannedRights.send_stickers || bannedRights.embed_links || bannedRights.send_media ||
                     bannedRights.send_gifs || bannedRights.send_games || bannedRights.send_inline) {

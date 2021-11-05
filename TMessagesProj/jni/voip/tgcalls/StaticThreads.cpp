@@ -1,6 +1,7 @@
 #include "StaticThreads.h"
 
 #include "rtc_base/thread.h"
+#include "call/call.h"
 
 #include <mutex>
 #include <algorithm>
@@ -60,9 +61,11 @@ public:
   explicit ThreadsImpl(size_t i) {
     auto suffix = i == 0 ? "" : "#" + std::to_string(i);
     network_ = create_network("tgc-net" + suffix);
+    network_->DisallowAllInvokes();
     media_ = create("tgc-media" + suffix);
     worker_ = create("tgc-work"  + suffix);
-    process_ = create("tgc-process"  + suffix);
+    worker_->DisallowAllInvokes();
+    worker_->AllowInvokesToThread(network_.get());
   }
 
   rtc::Thread *getNetworkThread() override {
@@ -74,15 +77,22 @@ public:
   rtc::Thread *getWorkerThread() override {
     return worker_.get();
   }
-  rtc::Thread *getProcessThread() override {
-    return process_.get();
+  rtc::scoped_refptr<webrtc::SharedModuleThread> getSharedModuleThread() override {
+    // This function must be called from a single thread because of SharedModuleThread implementation
+    // So we don't care about making it thread safe
+    if (!shared_module_thread_) {
+      shared_module_thread_ = webrtc::SharedModuleThread::Create(
+          webrtc::ProcessThread::Create("tgc-module"),
+          [=] { shared_module_thread_ = nullptr; });
+    }
+    return shared_module_thread_;
   }
 
 private:
   Thread network_;
   Thread media_;
   Thread worker_;
-  Thread process_;
+  rtc::scoped_refptr<webrtc::SharedModuleThread> shared_module_thread_;
 
   static Thread create(const std::string &name) {
     return init(std::unique_ptr<rtc::Thread>(rtc::Thread::Create()), name);
@@ -129,10 +139,6 @@ rtc::Thread *getMediaThread() {
 
 rtc::Thread *getWorkerThread() {
   return getThreads()->getWorkerThread();
-}
-
-rtc::Thread *getProcessThread() {
-  return getThreads()->getProcessThread();
 }
 
 std::shared_ptr<Threads> &getThreads() {

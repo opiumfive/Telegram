@@ -90,7 +90,7 @@ public class AccountSelectCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (checkImageView != null) {
+        if (checkImageView != null || infoTextView != null && getLayoutParams().width != LayoutHelper.WRAP_CONTENT) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
@@ -110,12 +110,12 @@ public class AccountSelectCell extends FrameLayout {
             TLRPC.User user = (TLRPC.User) object;
             avatarDrawable.setInfo(user);
             infoTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-            imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+            imageView.setForUserOrChat(user, avatarDrawable);
         } else {
             TLRPC.Chat chat = (TLRPC.Chat) object;
             avatarDrawable.setInfo(chat);
             infoTextView.setText(chat.title);
-            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+            imageView.setForUserOrChat(chat, avatarDrawable);
         }
     }
 
@@ -125,7 +125,7 @@ public class AccountSelectCell extends FrameLayout {
         avatarDrawable.setInfo(user);
         textView.setText(ContactsController.formatName(user.first_name, user.last_name));
         imageView.getImageReceiver().setCurrentAccount(account);
-        imageView.setImage(ImageLocation.getForUser(user,false), "50_50", avatarDrawable, user);
+        imageView.setForUserOrChat(user, avatarDrawable);
         checkImageView.setVisibility(check && account == UserConfig.selectedAccount ? VISIBLE : INVISIBLE);
     }
 
