@@ -48,6 +48,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -1429,9 +1430,35 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             forwardItem.setIcon(R.drawable.msg_forward);
             forwardItem.setContentDescription(LocaleController.getString("Forward", R.string.Forward));
             forwardItem.setDuplicateParentStateEnabled(false);
+
+            boolean isNoForward = false;
+            boolean isChannel = false;
+            if (!DialogObject.isEncryptedDialog(dialog_id) && !DialogObject.isUserDialog(dialog_id)) {
+                TLRPC.Chat currentChat = profileActivity.getMessagesController().getChat(-dialog_id);
+                if (currentChat != null && currentChat.noforwards) {
+                    isChannel = ChatObject.isChannel(currentChat);
+                    isNoForward = true;
+                }
+            }
+
+            if (isNoForward) {
+                forwardItem.setAlpha(0.5f);
+            }
+
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
-            forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+
+            boolean finalIsNoForward = isNoForward;
+            boolean finalIsChannel = isChannel;
+            forwardItem.setOnClickListener(v -> {
+                if (!finalIsNoForward) {
+                    onActionBarItemClick(forward);
+                } else {
+                    forwardItem.setEnabled(false);
+                    String subMessage = finalIsChannel ? LocaleController.getString("ForwardsRestrictedChannel", R.string.ForwardsRestrictedChannel) : LocaleController.getString("ForwardsRestrictedGroup", R.string.ForwardsRestrictedGroup);
+                    Toast.makeText(context, subMessage, Toast.LENGTH_LONG).show();
+                }
+            });
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -3024,7 +3051,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             } else {
                 currentChat = profileActivity.getMessagesController().getChat(-dialog_id);
             }
-            AlertsCreator.createDeleteMessagesAlert(profileActivity, currentUser, currentChat, currentEncryptedChat, null, mergeDialogId, null, selectedFiles, null, false, 1, () -> {
+            AlertsCreator.createDeleteMessagesAlert(profileActivity, currentUser, currentChat, currentEncryptedChat, null, mergeDialogId, null, selectedFiles, null, false, 1, null, () -> {
                 showActionMode(false);
                 actionBar.closeSearchField();
                 cantDeleteMessagesCount = 0;

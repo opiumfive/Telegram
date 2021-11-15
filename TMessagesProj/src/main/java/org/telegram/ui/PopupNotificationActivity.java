@@ -333,6 +333,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void didPressSendAsButton(boolean open) {
+
+            }
+
+            @Override
             public void onTextSelectionChanged(int start, int end) {
 
             }

@@ -234,6 +234,9 @@ public class AlertsCreator {
                 case "SCHEDULE_TOO_MUCH":
                     showSimpleToast(fragment, LocaleController.getString("MessageScheduledLimitReached", R.string.MessageScheduledLimitReached));
                     break;
+                case "CHAT_FORWARDS_RESTRICTED":
+                    showSimpleToast(fragment, LocaleController.getString("ForwardsRestrictedGroup", R.string.ForwardsRestrictedGroup));
+                    break;
             }
         } else if (request instanceof TLRPC.TL_messages_importChatInvite) {
             if (error.text.startsWith("FLOOD_WAIT")) {
@@ -3971,7 +3974,7 @@ public class AlertsCreator {
         void didPressedNewCard();
     }
 
-    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, boolean scheduled, int loadParticipant, Runnable onDelete, Theme.ResourcesProvider resourcesProvider) {
+    public static void createDeleteMessagesAlert(BaseFragment fragment, TLRPC.User user, TLRPC.Chat chat, TLRPC.EncryptedChat encryptedChat, TLRPC.ChatFull chatInfo, long mergeDialogId, MessageObject selectedMessage, SparseArray<MessageObject>[] selectedMessages, MessageObject.GroupedMessages selectedGroup, boolean scheduled, int loadParticipant, int[] dateRange, Runnable onDelete, Theme.ResourcesProvider resourcesProvider) {
         if (fragment == null || user == null && chat == null && encryptedChat == null) {
             return;
         }
@@ -3981,14 +3984,20 @@ public class AlertsCreator {
         }
         int currentAccount = fragment.getCurrentAccount();
 
+        boolean isDeleteByDateRange = dateRange != null && dateRange.length == 2;
+
         AlertDialog.Builder builder = new AlertDialog.Builder(activity, resourcesProvider);
         int count;
-        if (selectedGroup != null) {
-            count = selectedGroup.messages.size();
-        } else if (selectedMessage != null) {
-            count = 1;
+        if (isDeleteByDateRange) {
+            count = (dateRange[1] - dateRange[0] + 1) / 86400;
         } else {
-            count = selectedMessages[0].size() + selectedMessages[1].size();
+            if (selectedGroup != null) {
+                count = selectedGroup.messages.size();
+            } else if (selectedMessage != null) {
+                count = 1;
+            } else {
+                count = selectedMessages[0].size() + selectedMessages[1].size();
+            }
         }
 
         long dialogId;
@@ -4002,15 +4011,17 @@ public class AlertsCreator {
 
         int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         boolean hasNonDiceMessages = false;
-        if (selectedMessage != null) {
-            hasNonDiceMessages = !selectedMessage.isDice() || Math.abs(currentDate - selectedMessage.messageOwner.date) > 24 * 60 * 60;
-        } else {
-            for (int a = 0; a < 2; a++) {
-                for (int b = 0; b < selectedMessages[a].size(); b++) {
-                    MessageObject msg = selectedMessages[a].valueAt(b);
-                    if (!msg.isDice() || Math.abs(currentDate - msg.messageOwner.date) > 24 * 60 * 60) {
-                        hasNonDiceMessages = true;
-                        break;
+        if (!isDeleteByDateRange) {
+            if (selectedMessage != null) {
+                hasNonDiceMessages = !selectedMessage.isDice() || Math.abs(currentDate - selectedMessage.messageOwner.date) > 24 * 60 * 60;
+            } else {
+                for (int a = 0; a < 2; a++) {
+                    for (int b = 0; b < selectedMessages[a].size(); b++) {
+                        MessageObject msg = selectedMessages[a].valueAt(b);
+                        if (!msg.isDice() || Math.abs(currentDate - msg.messageOwner.date) > 24 * 60 * 60) {
+                            hasNonDiceMessages = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -4100,7 +4111,7 @@ public class AlertsCreator {
                         } else if (error != null && "USER_NOT_PARTICIPANT".equals(error.text)) {
                             loadType = 0;
                         }
-                        createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, scheduled, loadType, onDelete, resourcesProvider);
+                        createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, scheduled, loadType, null, onDelete, resourcesProvider);
                     }));
                     AndroidUtilities.runOnUIThread(() -> {
                         if (progressDialog[0] == null) {
@@ -4165,34 +4176,36 @@ public class AlertsCreator {
             }
         } else if (!scheduled && !ChatObject.isChannel(chat) && encryptedChat == null) {
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && (!user.bot || user.support) || chat != null) {
-                if (selectedMessage != null) {
-                    boolean hasOutgoing = !selectedMessage.isSendError() && (
-                            selectedMessage.messageOwner.action == null ||
-                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
-                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
-                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached ||
-                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) && (selectedMessage.isOut() || canRevokeInbox || ChatObject.hasAdminRights(chat)) && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
-                    if (hasOutgoing) {
-                        myMessagesCount++;
-                    }
-                    hasNotOut = !selectedMessage.isOut();
-                } else {
-                    for (int a = 1; a >= 0; a--) {
-                        for (int b = 0; b < selectedMessages[a].size(); b++) {
-                            MessageObject msg = selectedMessages[a].valueAt(b);
-                            if (!(msg.messageOwner.action == null ||
-                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
-                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
-                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached)) {
-                                continue;
-                            }
-                            if ((msg.isOut() || canRevokeInbox) || chat != null && ChatObject.canBlockUsers(chat)) {
-                                if ((currentDate - msg.messageOwner.date) <= revokeTimeLimit) {
-                                    myMessagesCount++;
-                                    if (!hasNotOut && !msg.isOut()) {
-                                        hasNotOut = true;
+                if (!isDeleteByDateRange) {
+                    if (selectedMessage != null) {
+                        boolean hasOutgoing = !selectedMessage.isSendError() && (
+                                selectedMessage.messageOwner.action == null ||
+                                        selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
+                                        selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
+                                        selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                        selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached ||
+                                        selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) && (selectedMessage.isOut() || canRevokeInbox || ChatObject.hasAdminRights(chat)) && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
+                        if (hasOutgoing) {
+                            myMessagesCount++;
+                        }
+                        hasNotOut = !selectedMessage.isOut();
+                    } else {
+                        for (int a = 1; a >= 0; a--) {
+                            for (int b = 0; b < selectedMessages[a].size(); b++) {
+                                MessageObject msg = selectedMessages[a].valueAt(b);
+                                if (!(msg.messageOwner.action == null ||
+                                        msg.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
+                                        msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
+                                        msg.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                        msg.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached)) {
+                                    continue;
+                                }
+                                if ((msg.isOut() || canRevokeInbox) || chat != null && ChatObject.canBlockUsers(chat)) {
+                                    if ((currentDate - msg.messageOwner.date) <= revokeTimeLimit) {
+                                        myMessagesCount++;
+                                        if (!hasNotOut && !msg.isOut()) {
+                                            hasNotOut = true;
+                                        }
                                     }
                                 }
                             }
@@ -4200,7 +4213,7 @@ public class AlertsCreator {
                     }
                 }
             }
-            if (myMessagesCount > 0 && hasNonDiceMessages && (user == null || !UserObject.isDeleted(user))) {
+            if (myMessagesCount > 0 && hasNonDiceMessages && (user == null || !UserObject.isDeleted(user)) || isDeleteByDateRange) {
                 hasDeleteForAllCheck = true;
                 FrameLayout frameLayout = new FrameLayout(activity);
                 CheckBoxCell cell = new CheckBoxCell(activity, 1, resourcesProvider);
@@ -4225,71 +4238,75 @@ public class AlertsCreator {
         }
         final TLRPC.User userFinal = actionUser;
         builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
-            ArrayList<Integer> ids = null;
-            if (selectedMessage != null) {
-                ids = new ArrayList<>();
-                ArrayList<Long> random_ids = null;
-                if (selectedGroup != null) {
-                    for (int a = 0; a < selectedGroup.messages.size(); a++) {
-                        MessageObject messageObject = selectedGroup.messages.get(a);
-                        ids.add(messageObject.getId());
-                        if (encryptedChat != null && messageObject.messageOwner.random_id != 0 && messageObject.type != 10) {
-                            if (random_ids == null) {
-                                random_ids = new ArrayList<>();
-                            }
-                            random_ids.add(messageObject.messageOwner.random_id);
-                        }
-                    }
-                } else {
-                    ids.add(selectedMessage.getId());
-                    if (encryptedChat != null && selectedMessage.messageOwner.random_id != 0 && selectedMessage.type != 10) {
-                        random_ids = new ArrayList<>();
-                        random_ids.add(selectedMessage.messageOwner.random_id);
-                    }
-                }
-                MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, dialogId, deleteForAll[0], scheduled);
+            if (isDeleteByDateRange) {
+                MessagesController.getInstance(currentAccount).deleteDialog(dialogId, 1, deleteForAll[0], dateRange);
             } else {
-                for (int a = 1; a >= 0; a--) {
+                ArrayList<Integer> ids = null;
+                if (selectedMessage != null) {
                     ids = new ArrayList<>();
-                    for (int b = 0; b < selectedMessages[a].size(); b++) {
-                        ids.add(selectedMessages[a].keyAt(b));
-                    }
                     ArrayList<Long> random_ids = null;
-                    long channelId = 0;
-                    if (!ids.isEmpty()) {
-                        MessageObject msg = selectedMessages[a].get(ids.get(0));
-                        if (msg.messageOwner.peer_id.channel_id != 0) {
-                            channelId = msg.messageOwner.peer_id.channel_id;
-                        }
-                    }
-                    if (encryptedChat != null) {
-                        random_ids = new ArrayList<>();
-                        for (int b = 0; b < selectedMessages[a].size(); b++) {
-                            MessageObject msg = selectedMessages[a].valueAt(b);
-                            if (msg.messageOwner.random_id != 0 && msg.type != 10) {
-                                random_ids.add(msg.messageOwner.random_id);
+                    if (selectedGroup != null) {
+                        for (int a = 0; a < selectedGroup.messages.size(); a++) {
+                            MessageObject messageObject = selectedGroup.messages.get(a);
+                            ids.add(messageObject.getId());
+                            if (encryptedChat != null && messageObject.messageOwner.random_id != 0 && messageObject.type != 10) {
+                                if (random_ids == null) {
+                                    random_ids = new ArrayList<>();
+                                }
+                                random_ids.add(messageObject.messageOwner.random_id);
                             }
+                        }
+                    } else {
+                        ids.add(selectedMessage.getId());
+                        if (encryptedChat != null && selectedMessage.messageOwner.random_id != 0 && selectedMessage.type != 10) {
+                            random_ids = new ArrayList<>();
+                            random_ids.add(selectedMessage.messageOwner.random_id);
                         }
                     }
                     MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, dialogId, deleteForAll[0], scheduled);
-                    selectedMessages[a].clear();
+                } else {
+                    for (int a = 1; a >= 0; a--) {
+                        ids = new ArrayList<>();
+                        for (int b = 0; b < selectedMessages[a].size(); b++) {
+                            ids.add(selectedMessages[a].keyAt(b));
+                        }
+                        ArrayList<Long> random_ids = null;
+                        long channelId = 0;
+                        if (!ids.isEmpty()) {
+                            MessageObject msg = selectedMessages[a].get(ids.get(0));
+                            if (msg.messageOwner.peer_id.channel_id != 0) {
+                                channelId = msg.messageOwner.peer_id.channel_id;
+                            }
+                        }
+                        if (encryptedChat != null) {
+                            random_ids = new ArrayList<>();
+                            for (int b = 0; b < selectedMessages[a].size(); b++) {
+                                MessageObject msg = selectedMessages[a].valueAt(b);
+                                if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                    random_ids.add(msg.messageOwner.random_id);
+                                }
+                            }
+                        }
+                        MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, encryptedChat, dialogId, deleteForAll[0], scheduled);
+                        selectedMessages[a].clear();
+                    }
                 }
-            }
-            if (userFinal != null) {
-                if (checks[0]) {
-                    MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatInfo);
-                }
-                if (checks[1]) {
-                    TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();
-                    req.channel = MessagesController.getInputChannel(chat);
-                    req.user_id = MessagesController.getInstance(currentAccount).getInputUser(userFinal);
-                    req.id = ids;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                if (userFinal != null) {
+                    if (checks[0]) {
+                        MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatInfo);
+                    }
+                    if (checks[1]) {
+                        TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();
+                        req.channel = MessagesController.getInputChannel(chat);
+                        req.user_id = MessagesController.getInstance(currentAccount).getInputUser(userFinal);
+                        req.id = ids;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 
-                    });
-                }
-                if (checks[2]) {
-                    MessagesController.getInstance(currentAccount).deleteUserChannelHistory(chat, userFinal, 0);
+                        });
+                    }
+                    if (checks[2]) {
+                        MessagesController.getInstance(currentAccount).deleteUserChannelHistory(chat, userFinal, 0);
+                    }
                 }
             }
             if (onDelete != null) {
@@ -4297,10 +4314,14 @@ public class AlertsCreator {
             }
         });
 
-        if (count == 1) {
-            builder.setTitle(LocaleController.getString("DeleteSingleMessagesTitle", R.string.DeleteSingleMessagesTitle));
+        if (isDeleteByDateRange) {
+            builder.setTitle(LocaleController.getString("DeleteRangeMessagesTitle", R.string.DeleteRangeMessagesTitle));
         } else {
-            builder.setTitle(LocaleController.formatString("DeleteMessagesTitle", R.string.DeleteMessagesTitle, LocaleController.formatPluralString("messages", count)));
+            if (count == 1) {
+                builder.setTitle(LocaleController.getString("DeleteSingleMessagesTitle", R.string.DeleteSingleMessagesTitle));
+            } else {
+                builder.setTitle(LocaleController.formatString("DeleteMessagesTitle", R.string.DeleteMessagesTitle, LocaleController.formatPluralString("messages", count)));
+            }
         }
 
         if (chat != null && hasNotOut) {
@@ -4325,10 +4346,14 @@ public class AlertsCreator {
                     builder.setMessage(LocaleController.getString("AreYouSureDeleteFewMessagesMega", R.string.AreYouSureDeleteFewMessagesMega));
                 }
             } else {
-                if (count == 1) {
-                    builder.setMessage(LocaleController.getString("AreYouSureDeleteSingleMessage", R.string.AreYouSureDeleteSingleMessage));
+                if (isDeleteByDateRange) {
+                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteRangeMessages", R.string.AreYouSureDeleteRangeMessages, LocaleController.formatPluralString("SelectedDays", count))));
                 } else {
-                    builder.setMessage(LocaleController.getString("AreYouSureDeleteFewMessages", R.string.AreYouSureDeleteFewMessages));
+                    if (count == 1) {
+                        builder.setMessage(LocaleController.getString("AreYouSureDeleteSingleMessage", R.string.AreYouSureDeleteSingleMessage));
+                    } else {
+                        builder.setMessage(LocaleController.getString("AreYouSureDeleteFewMessages", R.string.AreYouSureDeleteFewMessages));
+                    }
                 }
             }
         }

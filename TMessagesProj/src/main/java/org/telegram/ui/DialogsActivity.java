@@ -3291,6 +3291,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 @Override
+                public void didPressSendAsButton(boolean open) {
+
+                }
+
+                @Override
                 public void needStartRecordVideo(int state, boolean notify, int scheduleDate) {
 
                 }
