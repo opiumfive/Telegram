@@ -1011,6 +1011,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer) args[0];
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateFields(true);
+            }
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 setAvatar();
             }
@@ -1271,6 +1274,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             }
         }
         boolean isPrivate = TextUtils.isEmpty(currentChat.username);
+        boolean isRestricted = currentChat.noforwards;
 
         if (historyCell != null) {
             if (info != null && info.location instanceof TLRPC.TL_channelLocation) {
@@ -1344,9 +1348,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             } else {
                 String type;
                 if (isChannel) {
-                    type = isPrivate ? LocaleController.getString("TypePrivate", R.string.TypePrivate) : LocaleController.getString("TypePublic", R.string.TypePublic);
+                    type = isPrivate ? LocaleController.getString("TypePrivate", R.string.TypePrivate) + (isRestricted ? " " + LocaleController.getString("Restricted", R.string.Restricted) : "") : LocaleController.getString("TypePublic", R.string.TypePublic);
                 } else {
-                    type = isPrivate ? LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup) : LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
+                    type = isPrivate ? LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup) + (isRestricted ? " " + LocaleController.getString("Restricted", R.string.Restricted) : "") : LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
                 }
                 if (isChannel) {
                     typeCell.setTextAndValue(LocaleController.getString("ChannelType", R.string.ChannelType), type, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE);

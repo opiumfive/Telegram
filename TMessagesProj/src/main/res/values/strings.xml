@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram Fix</string>
-    <string name="AppNameBeta">Telegram Fix Beta</string>
+    <string name="AppName">Telegram FairyZebra</string>
+    <string name="AppNameBeta">Telegram FairyZebra Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -567,6 +567,7 @@
     <string name="UserRestrictionsBlock">Ban and remove from group</string>
     <string name="UserRestrictionsApplyChanges">Apply Changes?</string>
     <string name="UserRestrictionsApplyChangesText">You have changed this user\'s rights in **%1$s**. Apply changes?</string>
+    <string name="OnlyOwnerCanChangeSettings">Only an owner has a right to change the setting</string>
     <string name="UserRestrictionsCustom">Custom</string>
     <string name="ManageGroup">Manage Group</string>
     <string name="ManageChannel">Manage Channel</string>
@@ -583,6 +584,7 @@
     <string name="ProfileJoinChannel">Join Channel</string>
     <string name="ProfileJoinGroup">Join Group</string>
     <string name="GroupType">Group Type</string>
+    <string name="Restricted">restricted</string>
     <string name="ChannelType">Channel Type</string>
     <string name="GroupTypeHeader">Group type</string>
     <string name="ChannelTypeHeader">Channel type</string>
@@ -593,6 +595,11 @@
     <string name="TypePrivateGroup">Private</string>
     <string name="TypePublicGroup">Public</string>
     <string name="TypeLocationGroup">Link</string>
+    <string name="SavingContent">Saving content</string>
+    <string name="ForwardsRestrictedChannel">Forwards from this channel are restricted.</string>
+    <string name="ForwardsRestrictedGroup">Forwards from this group are restricted.</string>
+    <string name="SavingContentCheck">Restrict saving content</string>
+    <string name="SavingContentInfo">Participants won\'t be able to forward messages from this group or save media files.</string>
     <string name="TypeLocationGroupEdit">Tap to add a permanent link</string>
     <string name="ChoosePhoto">Choose photo</string>
     <string name="ChoosePhotoOrVideo">Choose photo or video</string>
@@ -778,6 +785,8 @@
     <string name="EventLogToggledInvitesOff">un1 disabled group invites</string>
     <string name="EventLogToggledSignaturesOn">un1 enabled signatures</string>
     <string name="EventLogToggledSignaturesOff">un1 disabled signatures</string>
+    <string name="EventActionToggleNoForwardsOn">un1 enabled forwards restriction</string>
+    <string name="EventActionToggleNoForwardsOff">un1 disabled forwards restriction</string>
     <string name="EventLogRestrictedUntil">changed permissions for %1$s\n\nDuration: %2$s</string>
     <string name="EventLogDefaultPermissions">changed default permissions</string>
     <string name="EventLogRestrictedSendStickers">Send stickers &amp; GIFs</string>
@@ -1870,6 +1879,7 @@
     <string name="BackgroundColorSinglePreviewLine1">Press \'Set\' to apply the background.</string>
     <string name="BackgroundColorSinglePreviewLine2">Enjoy the view.</string>
     <string name="SetBackground">SET BACKGROUND</string>
+    <string name="SelectDays">Select days</string>
     <string name="SearchByColor">Search by color</string>
     <string name="SearchBackgrounds">Search Backgrounds</string>
     <string name="BackgroundSearchColor">Color:</string>
@@ -3304,12 +3314,14 @@
     <string name="AreYouSureClearHistoryChannel">Delete all cached text and media from this channel?</string>
     <string name="AreYouSureClearHistoryGroup">Delete all cached text and media from this group?</string>
     <string name="DeleteMessagesTitle">Delete %1$s</string>
+    <string name="DeleteRangeMessagesTitle">Delete messages</string>
     <string name="DeleteSingleMessagesTitle">Delete message</string>
     <string name="DeleteMessagesTextGroupPart">You can also delete the %1$s from the inboxes of other group members by checking \"Delete for all members\".</string>
     <string name="DeleteMessagesTextGroup">You can also delete the %1$s you sent from the inboxes of other group members by checking \"Unsend my messages\".</string>
     <string name="DeleteMessagesText">You can also delete the %1$s you sent from **%2$s**\'s inbox by checking \"Unsend my messages\".</string>
     <string name="AreYouSureDeleteSingleMessage">Are you sure you want to delete this message?</string>
     <string name="AreYouSureDeleteFewMessages">Are you sure you want to delete these messages?</string>
+    <string name="AreYouSureDeleteRangeMessages">Are you sure you want to delete all messages for the **%1$s**?</string>
     <string name="AreYouSureDeleteSingleMessageMega">Are you sure you want to delete this message for everyone?</string>
     <string name="AreYouSureDeleteFewMessagesMega">Are you sure you want to delete these messages for everyone?</string>
     <string name="DeleteMessagesOption">Unsend My Messages</string>
@@ -3691,6 +3703,7 @@
     <string name="VoipGroupJoinAs">Join Voice Chat as...</string>
     <string name="VoipChannelJoinAs">Join Live Stream as...</string>
     <string name="VoipGroupDisplayAs">Display me as...</string>
+    <string name="SendMessageAs">Send message as...</string>
     <string name="VoipGroupStartAsInfo">Choose whether you want to be displayed as your personal account or as your channel.</string>
     <string name="VoipGroupStartAsInfoGroup">Choose whether you want to be displayed as your personal account, this group, or one of your channels.</string>
     <string name="VoipGroupContinueAs">Continue as %1$s</string>
@@ -4072,6 +4085,12 @@
     <string name="Days_few">%1$d days</string>
     <string name="Days_many">%1$d days</string>
     <string name="Days_other">%1$d days</string>
+    <string name="SelectedDays_zero">%1$d selected days</string>
+    <string name="SelectedDays_one">%1$d selected day</string>
+    <string name="SelectedDays_two">%1$d selected days</string>
+    <string name="SelectedDays_few">%1$d selected days</string>
+    <string name="SelectedDays_many">%1$d selected </string>
+    <string name="SelectedDays_other">%1$d selected days</string>
     <string name="Weeks_zero">%1$d weeks</string>
     <string name="Weeks_one">%1$d week</string>
     <string name="Weeks_two">%1$d weeks</string>

@@ -1865,8 +1865,15 @@ public class MessagesStorage extends BaseController {
                                 int onlyHistory = data.readInt32(false);
                                 int maxIdDelete = data.readInt32(false);
                                 boolean revoke = data.readBool(false);
+                                int t1 = data.readInt32(false);
+                                int t2 = data.readInt32(false);
+                                int[] dateRange = null;
+                                if (t1 != 0) {
+                                    dateRange = new int[] {t1, t2};
+                                }
                                 TLRPC.InputPeer inputPeer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(did, first ? 1 : 0, onlyHistory, maxIdDelete, revoke, inputPeer, taskId));
+                                int[] finalDateRange = dateRange;
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(did, first ? 1 : 0, onlyHistory, maxIdDelete, revoke, inputPeer, finalDateRange, taskId));
                                 break;
                             }
                             case 15: {
@@ -3674,7 +3681,7 @@ public class MessagesStorage extends BaseController {
         return false;
     }
 
-    public void deleteDialog(long did, int messagesOnly) {
+    public void deleteDialog(long did, int messagesOnly, int[] dateRange) {
         storageQueue.postRunnable(() -> {
             try {
                 if (messagesOnly == 3) {
@@ -3772,13 +3779,23 @@ public class MessagesStorage extends BaseController {
                     return;
                 }
 
-                database.executeFast("UPDATE dialogs SET unread_count = 0, unread_count_i = 0 WHERE did = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
-                database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
+                if (dateRange == null || dateRange.length != 2) {
+                    database.executeFast("UPDATE dialogs SET unread_count = 0, unread_count_i = 0 WHERE did = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM media_v4 WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
+                } else {
+                    database.executeFast(String.format(Locale.US, "UPDATE dialogs SET unread_count = 0, unread_count_i = 0 WHERE did = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM messages_v2 WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM media_counts_v2 WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM media_v4 WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM messages_holes WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM media_holes_v2 WHERE uid = %d AND date >= %d AND date <= %d", did, dateRange[0], dateRange[1])).stepThis().dispose();
+                }
                 getMediaDataController().clearBotKeyboard(did, null);
                 AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needReloadRecentDialogsSearch));
                 resetAllUnreadCounters(false);
@@ -8144,6 +8161,7 @@ public class MessagesStorage extends BaseController {
                                 oldChat.photo = chat.photo;
                                 oldChat.broadcast = chat.broadcast;
                                 oldChat.verified = chat.verified;
+                                oldChat.noforwards = chat.noforwards;
                                 oldChat.megagroup = chat.megagroup;
                                 oldChat.call_not_empty = chat.call_not_empty;
                                 oldChat.call_active = chat.call_active;

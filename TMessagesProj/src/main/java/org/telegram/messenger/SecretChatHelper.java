@@ -1153,7 +1153,7 @@ public class SecretChatHelper extends BaseController {
                             dialogsToUpdate.put(did, 0);
                             getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
                         }));
-                        getMessagesStorage().deleteDialog(did, 1);
+                        getMessagesStorage().deleteDialog(did, 1, null);
                         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
                         getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
                     });

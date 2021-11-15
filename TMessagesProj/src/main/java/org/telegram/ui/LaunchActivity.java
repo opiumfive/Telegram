@@ -4830,6 +4830,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
     }
 
+    public BaseFragment getFragment() {
+        BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+        return fragment;
+    }
+
     private void showVoiceChatTooltip(int action) {
         VoIPService voIPService = VoIPService.getSharedInstance();
         if (voIPService == null || mainFragmentsStack.isEmpty() || voIPService.groupCall == null) {
