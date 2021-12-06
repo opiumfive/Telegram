@@ -35,6 +35,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -2717,6 +2718,8 @@ public class Theme {
     public static Paint chat_urlPaint;
     public static Paint chat_textSearchSelectionPaint;
     public static Paint chat_instantViewRectPaint;
+    public static Paint chat_instantViewRectPaint2;
+    public static Paint chat_clearPaint;
     public static Paint chat_pollTimerPaint;
     public static Paint chat_replyLinePaint;
     public static Paint chat_msgErrorPaint;
@@ -2758,6 +2761,8 @@ public class Theme {
     public static TextPaint chat_contactNamePaint;
     public static TextPaint chat_contactPhonePaint;
     public static TextPaint chat_timePaint;
+    public static TextPaint chat_PMReactionsPaint;
+    public static TextPaint chat_PMReactionsPaint2;
     public static TextPaint chat_adminPaint;
     public static TextPaint chat_namePaint;
     public static TextPaint chat_forwardNamePaint;
@@ -8181,6 +8186,8 @@ public class Theme {
             chat_gamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_shipmentPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            chat_PMReactionsPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            chat_PMReactionsPaint2 = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_adminPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -8193,6 +8200,13 @@ public class Theme {
             chat_instantViewRectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_instantViewRectPaint.setStyle(Paint.Style.STROKE);
             chat_instantViewRectPaint.setStrokeCap(Paint.Cap.ROUND);
+            chat_instantViewRectPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_instantViewRectPaint2.setStyle(Paint.Style.STROKE);
+           // chat_instantViewRectPaint2.setStrokeCap(Paint.Cap.ROUND);
+            chat_clearPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_clearPaint.setAlpha(0xFF);
+            chat_clearPaint.setStyle(Paint.Style.FILL);
+            chat_clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             chat_pollTimerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_pollTimerPaint.setStyle(Paint.Style.STROKE);
             chat_pollTimerPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -8532,6 +8546,10 @@ public class Theme {
             chat_contactPhonePaint.setTextSize(AndroidUtilities.dp(13));
             chat_durationPaint.setTextSize(AndroidUtilities.dp(12));
             chat_timePaint.setTextSize(AndroidUtilities.dp(12));
+            chat_PMReactionsPaint.setTextSize(AndroidUtilities.dp(12));
+            chat_PMReactionsPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            chat_PMReactionsPaint2.setTextSize(AndroidUtilities.dp(12));
+            chat_PMReactionsPaint2.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
             chat_adminPaint.setTextSize(AndroidUtilities.dp(13));
             chat_namePaint.setTextSize(AndroidUtilities.dp(14));
             chat_forwardNamePaint.setTextSize(AndroidUtilities.dp(14));
@@ -8541,6 +8559,7 @@ public class Theme {
             chat_shipmentPaint.setTextSize(AndroidUtilities.dp(13));
             chat_instantViewPaint.setTextSize(AndroidUtilities.dp(13));
             chat_instantViewRectPaint.setStrokeWidth(AndroidUtilities.dp(1));
+            chat_instantViewRectPaint2.setStrokeWidth(AndroidUtilities.dp(1));
             chat_pollTimerPaint.setStrokeWidth(AndroidUtilities.dp(1.1f));
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_contextResult_titleTextPaint.setTextSize(AndroidUtilities.dp(15));

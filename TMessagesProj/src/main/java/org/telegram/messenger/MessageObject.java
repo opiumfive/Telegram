@@ -112,7 +112,9 @@ public class MessageObject {
     public boolean shouldRemoveVideoEditedInfo;
     public boolean viewsReloaded;
     public boolean pollVisibleOnScreen;
+    public boolean visibleOnScreen;
     public long pollLastCheckTime;
+    public long reactionsLastCheckTime;
     public int wantedBotKeyboardWidth;
     public boolean attachPathExists;
     public boolean mediaExists;
@@ -120,6 +122,7 @@ public class MessageObject {
     public String customReplyName;
     public boolean useCustomPhoto;
     public StringBuilder botButtonsLayout;
+    public StringBuilder reactionButtonsLayout;
     public boolean isRestrictedMessage;
     public long loadedFileSize;
 
@@ -128,6 +131,7 @@ public class MessageObject {
     public String botStartParam;
 
     public boolean animateComments;
+    public boolean animateReactions;
 
     public boolean loadingCancelled;
 
@@ -817,6 +821,81 @@ public class MessageObject {
             }
         }
 
+        public MessageObject findMessageObjectWithMaxId() {
+            if (!messages.isEmpty()) {
+                int max = 0;
+                int maxIndex = 0;
+                for (int i = 0; i < messages.size(); i++) {
+                    MessageObject object = messages.get(i);
+                    if (object.getId() > max) {
+                        max = object.getId();
+                        maxIndex = i;
+                    }
+                }
+                return messages.get(maxIndex);
+            }
+            return null;
+        }
+
+        public MessageObject findMessageObjectWithMinId() {
+            if (!messages.isEmpty()) {
+                int min = Integer.MAX_VALUE;
+                int minIndex = 0;
+                for (int i = 0; i < messages.size(); i++) {
+                    MessageObject object = messages.get(i);
+                    if (object.getId() <= min) {
+                        min = object.getId();
+                        minIndex = i;
+                    }
+                }
+                return messages.get(minIndex);
+            }
+            return null;
+        }
+
+        public int findPrimaryMessageObjectStartX() {
+
+            if (!messages.isEmpty() && positions.isEmpty()) {
+                calculate();
+            }
+            for (int i = 0; i < messages.size(); i++) {
+                MessageObject object = messages.get(i);
+                MessageObject.GroupedMessagePosition position = positions.get(object);
+                if (position != null  && (position.flags & (MessageObject.POSITION_FLAG_TOP | MessageObject.POSITION_FLAG_LEFT)) != 0) {
+                    return position.pw;
+                }
+            }
+            return 0;
+        }
+
+        public boolean isMessageInGroupBottom(MessageObject object) {
+
+            if (!messages.isEmpty() && positions.isEmpty()) {
+                calculate();
+            }
+
+            MessageObject.GroupedMessagePosition position = positions.get(object);
+            if (position != null  && (position.flags & (MessageObject.POSITION_FLAG_BOTTOM)) != 0) {
+                return true;
+            }
+
+            return false;
+        }
+
+        public boolean isMessageInGroupBottomLeft(MessageObject object) {
+
+            if (!messages.isEmpty() && positions.isEmpty()) {
+                calculate();
+            }
+
+            MessageObject.GroupedMessagePosition position = positions.get(object);
+            if (position != null  && (position.flags & (MessageObject.POSITION_FLAG_LEFT)) != 0 &&  (position.flags & (MessageObject.POSITION_FLAG_BOTTOM)) != 0) {
+                return true;
+            }
+
+            return false;
+        }
+
         public MessageObject findPrimaryMessageObject() {
             if (!messages.isEmpty() && positions.isEmpty()) {
                 calculate();
@@ -829,6 +908,20 @@ public class MessageObject {
                 }
             }
             return null;
+        }
+
+        public MessageObject findBottomLeftMessageObject() {
+            if (!messages.isEmpty() && positions.isEmpty()) {
+                calculate();
+            }
+            for (int i = 0; i < messages.size(); i++) {
+                MessageObject object = messages.get(i);
+                MessageObject.GroupedMessagePosition position = positions.get(object);
+                if (position != null && (position.flags & (MessageObject.POSITION_FLAG_LEFT)) != 0 && (position.flags & (MessageObject.POSITION_FLAG_BOTTOM)) != 0) {
+                    return object;
+                }
+            }
+            return findMessageObjectWithMinId();
         }
 
         public static class TransitionParams {
@@ -2125,12 +2218,17 @@ public class MessageObject {
                 }
             }
         }
+
         message.reactions = reactions;
         message.flags |= 1048576;
     }
 
     public boolean hasReactions() {
         return messageOwner.reactions != null && !messageOwner.reactions.results.isEmpty();
+    }
+
+    public boolean hasReactionsByFlag() {
+        return (messageOwner.flags & 1048576) != 0;
     }
 
     public static void updatePollResults(TLRPC.TL_messageMediaPoll media, TLRPC.PollResults results) {
