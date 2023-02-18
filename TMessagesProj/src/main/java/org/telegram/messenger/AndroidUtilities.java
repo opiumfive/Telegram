@@ -1611,6 +1611,13 @@ public class AndroidUtilities {
         return (int) Math.floor(density * value);
     }
 
+    public static float px2dp(float value) {
+        if (value == 0) {
+            return 0;
+        }
+        return value / density;
+    }
+
     public static int compare(int lhs, int rhs) {
         if (lhs == rhs) {
             return 0;

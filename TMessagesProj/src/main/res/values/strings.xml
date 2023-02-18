@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegram FairyZebra</string>
+    <string name="AppNameBeta">Telegram FairyZebra Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -2747,6 +2747,12 @@
     <string name="CurvesRed">RED</string>
     <string name="CurvesGreen">GREEN</string>
     <string name="CurvesBlue">BLUE</string>
+    <string name="Off">Off</string>
+    <string name="Reactions">Reactions</string>
+    <string name="EnableReactions">Enable Reactions</string>
+    <string name="AvailableReactions">Available Reactions</string>
+    <string name="EnableReactionsHintChannel">Allow subscribers to react to channel posts.</string>
+    <string name="EnableReactionsHintGroup">Allow subscribers to react to group posts.</string>
     <string name="BlurOff">Off</string>
     <string name="BlurLinear">Linear</string>
     <string name="BlurRadial">Radial</string>
@@ -4512,6 +4518,13 @@
     <string name="MessageSeen_few">%1$d Seen</string>
     <string name="MessageSeen_many">%1$d Seen</string>
     <string name="MessageSeen_other">%1$d Seen</string>
+
+    <string name="ReactionSeen_zero">%1$d Reaction</string>
+    <string name="ReactionSeen_one">%1$d Reaction</string>
+    <string name="ReactionSeen_two">%1$d Reactions</string>
+    <string name="ReactionSeen_few">%1$d Reactions</string>
+    <string name="ReactionSeen_many">%1$d Reactions</string>
+    <string name="ReactionSeen_other">%1$d Reactions</string>
 
     <string name="MessagePlayed_zero">%1$d Played</string>
     <string name="MessagePlayed_one">Played</string>

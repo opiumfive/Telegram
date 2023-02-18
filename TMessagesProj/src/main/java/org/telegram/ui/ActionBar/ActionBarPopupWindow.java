@@ -186,6 +186,79 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
         }
 
+        public ActionBarPopupWindowLayout(Context context, int resId, Theme.ResourcesProvider resourcesProvider, boolean noPaddings) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+            if (!noPaddings) {
+                backgroundDrawable = getResources().getDrawable(resId).mutate();
+                if (backgroundDrawable != null) {
+                    backgroundDrawable.getPadding(bgPaddings);
+                }
+            }
+            setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+            if (!noPaddings) {
+                setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+            }
+            setWillNotDraw(false);
+
+            try {
+                scrollView = new ScrollView(context);
+                scrollView.setVerticalScrollBarEnabled(false);
+                addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+
+            linearLayout = new LinearLayout(context) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    if (fitItems) {
+                        int maxWidth = 0;
+                        int fixWidth = 0;
+                        gapStartY = -1000000;
+                        gapEndY = -1000000;
+                        ArrayList<View> viewsToFix = null;
+                        for (int a = 0, N = getChildCount(); a < N; a++) {
+                            View view = getChildAt(a);
+                            if (view.getVisibility() == GONE) {
+                                continue;
+                            }
+                            Object tag = view.getTag(R.id.width_tag);
+                            Object tag2 = view.getTag(R.id.object_tag);
+                            if (tag != null) {
+                                view.getLayoutParams().width = LayoutHelper.WRAP_CONTENT;
+                            }
+                            measureChildWithMargins(view, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                            if (!(tag instanceof Integer) && tag2 == null) {
+                                maxWidth = Math.max(maxWidth, view.getMeasuredWidth());
+                                continue;
+                            } else if (tag instanceof Integer) {
+                                fixWidth = Math.max((Integer) tag, view.getMeasuredWidth());
+                                gapStartY = view.getMeasuredHeight();
+                                gapEndY = gapStartY + AndroidUtilities.dp(6);
+                            }
+                            if (viewsToFix == null) {
+                                viewsToFix = new ArrayList<>();
+                            }
+                            viewsToFix.add(view);
+                        }
+                        if (viewsToFix != null) {
+                            for (int a = 0, N = viewsToFix.size(); a < N; a++) {
+                                viewsToFix.get(a).getLayoutParams().width = Math.max(maxWidth, fixWidth);
+                            }
+                        }
+                    }
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
+            };
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+            if (scrollView != null) {
+                scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            } else {
+                addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            }
+        }
+
         public void setFitItems(boolean value) {
             fitItems = value;
         }
@@ -203,7 +276,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public void setBackgroundColor(int color) {
-            if (backgroundColor != color) {
+            if (backgroundColor != color && backgroundDrawable != null) {
                 backgroundDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = color, PorterDuff.Mode.MULTIPLY));
             }
         }

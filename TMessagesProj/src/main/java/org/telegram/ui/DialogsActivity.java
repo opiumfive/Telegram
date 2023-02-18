@@ -4050,6 +4050,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (!onlySelect && folderId == 0) {
             getMediaDataController().checkStickers(MediaDataController.TYPE_EMOJI);
         }
+        getMediaDataController().getAvailableReactions();
         if (searchViewPager != null) {
             searchViewPager.onResume();
         }

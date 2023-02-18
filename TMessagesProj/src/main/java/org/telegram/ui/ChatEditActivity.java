@@ -39,6 +39,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -71,6 +72,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.reactions.ReactionsSettingsActivity;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -113,6 +115,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private TextCell membersCell;
     private TextCell memberRequestsCell;
     private TextCell inviteLinksCell;
+    private TextCell configureReactionsCell;
     private TextCell adminCell;
     private TextCell blockCell;
     private TextCell logCell;
@@ -810,6 +813,17 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             presentFragment(fragment);
         });
 
+        configureReactionsCell = new TextCell(context);
+        configureReactionsCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+        configureReactionsCell.setVisibility(currentChat.creator || ChatObject.hasAdminRights(currentChat) && ChatObject.canChangeChatInfo(currentChat) ? View.VISIBLE : View.GONE);
+        configureReactionsCell.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putLong("chat_id", chatId);
+            ReactionsSettingsActivity fragment = new ReactionsSettingsActivity(args);
+            fragment.setInfo(info);
+            presentFragment(fragment);
+        });
+
         adminCell = new TextCell(context);
         adminCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         adminCell.setOnClickListener(v -> {
@@ -853,6 +867,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
         if (!isChannel) {
             infoContainer.addView(inviteLinksCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            infoContainer.addView(configureReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
         infoContainer.addView(adminCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         infoContainer.addView(membersCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -861,6 +876,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
         if (isChannel) {
             infoContainer.addView(inviteLinksCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            infoContainer.addView(configureReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
         if (isChannel || currentChat.gigagroup) {
             infoContainer.addView(blockCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -1011,6 +1027,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer) args[0];
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateFields(true);
+            }
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 setAvatar();
             }
@@ -1449,6 +1468,27 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     inviteLinksCell.setTextAndValueAndIcon(LocaleController.getString("InviteLinks", R.string.InviteLinks), "1", R.drawable.actions_link, true);
                 }
             }
+        }
+
+        if (configureReactionsCell != null) {
+            String val = LocaleController.getString("Off", R.string.Off);
+            if (info != null) {
+                ArrayList<String> enabled = info.available_reactions;
+                int on = 0;
+                if (enabled != null && !enabled.isEmpty()) {
+                    on = enabled.size();
+                }
+                ArrayList<TLRPC.TL_availableReaction> avail = MediaDataController.getInstance(currentAccount).getAvailableReactions();
+                int overall = 11;
+                if (avail != null && !avail.isEmpty()) {
+                    overall = avail.size();
+                }
+
+                if (on != 0) {
+                    val = "" + on + "/" + overall;
+                }
+            }
+            configureReactionsCell.setTextAndValueAndIcon(LocaleController.getString("Reactions", R.string.Reactions), val, R.drawable.actions_reactions, true);
         }
 
         if (stickersCell != null && info != null) {

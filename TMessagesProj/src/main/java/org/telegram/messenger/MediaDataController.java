@@ -161,6 +161,10 @@ public class MediaDataController extends BaseController {
     private HashSet<String> loadingDiceStickerSets = new HashSet<>();
     private LongSparseArray<Runnable> removingStickerSetsUndos = new LongSparseArray<>();
     private Runnable[] scheduledLoadStickers = new Runnable[5];
+    private ArrayList<TLRPC.TL_availableReaction> availableReactions = new ArrayList<>();
+    private int availableReactionsHash = 0;
+    private int availableReactionsLoadDate = 0;
+    private boolean availableReactionsLoading = false;
     private boolean[] loadingStickers = new boolean[5];
     private boolean[] stickersLoaded = new boolean[5];
     private long[] loadHash = new long[5];
@@ -253,6 +257,83 @@ public class MediaDataController extends BaseController {
         botInfos.clear();
         botKeyboards.clear();
         botKeyboardsByMids.clear();
+    }
+
+    public ArrayList<TLRPC.TL_availableReaction> getAvailableReactions() {
+
+        if (reactionPreferences == null) {
+            reactionPreferences = ApplicationLoader.applicationContext.getSharedPreferences("availableReactions", Activity.MODE_PRIVATE);
+        }
+
+        if (availableReactions.isEmpty()) {
+            // get
+            String reactionsData = reactionPreferences.getString("reactionsData", "");
+            if (!reactionsData.isEmpty()) {
+                byte[] bytes = Utilities.hexToBytes(reactionsData);
+                SerializedData serializedData = new SerializedData(bytes);
+
+                try {
+                    TLRPC.messages_AvailableReactions availableReactionsCache = TLRPC.messages_AvailableReactions.TLdeserialize(serializedData, serializedData.readInt32(true), true);
+                    if (availableReactionsCache instanceof TLRPC.TL_messages_availableReactions) {
+                        TLRPC.TL_messages_availableReactions res = (TLRPC.TL_messages_availableReactions) availableReactionsCache;
+
+                        availableReactionsLoadDate = reactionPreferences.getInt("loadDate", 0);
+                        if (Math.abs(System.currentTimeMillis() / 1000 - availableReactionsLoadDate) >= 60 * 60) {
+                            reactionPreferences.edit().clear().apply();
+                            availableReactionsLoadDate = 0;
+                        } else {
+                            availableReactions.addAll(res.reactions);
+                            preloadReactionsMedia();
+                            availableReactionsHash = res.hash;
+                        }
+                    }
+                } catch (Exception e) {
+                    reactionPreferences.edit().clear().apply();
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        if ((availableReactions.isEmpty() || Math.abs(System.currentTimeMillis() / 1000 - availableReactionsLoadDate) >= 60 * 60) && !availableReactionsLoading) {
+            availableReactionsLoading = true;
+            TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
+            req.hash = availableReactions.isEmpty() ? 0 : availableReactionsHash;
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+                availableReactionsLoading = false;
+                if (response instanceof TLRPC.TL_messages_availableReactions) {
+                    TLRPC.TL_messages_availableReactions res = (TLRPC.TL_messages_availableReactions) response;
+
+                    availableReactionsLoadDate = (int) (System.currentTimeMillis() / 1000);
+                    boolean loadedNotEmpty = res.reactions != null && !res.reactions.isEmpty();
+                    if (availableReactionsHash == 0 || loadedNotEmpty) {
+                        availableReactions.clear();
+                    }
+                    availableReactionsHash = res.hash;
+
+                    if (loadedNotEmpty) {
+                        SerializedData serializedData = new SerializedData(res.getObjectSize());
+                        res.serializeToStream(serializedData);
+                        reactionPreferences.edit().putString("reactionsData", Utilities.bytesToHex(serializedData.toByteArray())).putInt("loadDate", availableReactionsLoadDate).apply();
+                        serializedData.cleanup();
+                        availableReactions.addAll(res.reactions);
+                        preloadReactionsMedia();
+                    }
+                }
+            });
+        }
+        return availableReactions;
+    }
+
+    public void preloadReactionsMedia() {
+        if (!availableReactions.isEmpty())
+        for (TLRPC.TL_availableReaction r: availableReactions) {
+            getFileLoader().loadFile(ImageLocation.getForDocument(r.select_animation), r.select_animation, "tgs", 2, 1);
+            //getFileLoader().loadFile(ImageLocation.getForDocument(r.effect_animation), r.effect_animation, "tgs", 2, 1);
+            //getFileLoader().loadFile(ImageLocation.getForDocument(r.activate_animation), r.activate_animation, "tgs", 2, 1);
+            getFileLoader().loadFile(ImageLocation.getForDocument(r.static_icon), r.static_icon, "webp", 2, 1);
+        }
+        loadStickersByEmojiOrName("EmojiAnimations", false, true);
+        loadStickersByEmojiOrName("AnimatedEmojies", true, true);
     }
 
     public void checkStickers(int type) {
@@ -4824,6 +4905,7 @@ public class MediaDataController extends BaseController {
     private LongSparseArray<SparseArray<TLRPC.Message>> draftMessages = new LongSparseArray<>();
     private boolean inTransaction;
     private SharedPreferences draftPreferences;
+    private SharedPreferences reactionPreferences;
     private boolean loadingDrafts;
 
     public void loadDraftsIfNeed() {
