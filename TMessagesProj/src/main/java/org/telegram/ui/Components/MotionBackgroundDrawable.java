@@ -29,6 +29,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -166,6 +167,10 @@ public class MotionBackgroundDrawable extends Drawable {
         return currentBitmap;
     }
 
+    public Bitmap getPatternBitmap() {
+        return patternBitmap;
+    }
+
     public int getIntensity() {
         return intensity;
     }
@@ -254,7 +259,7 @@ public class MotionBackgroundDrawable extends Drawable {
     }
 
     public void switchToNextPosition(boolean fast) {
-        if (posAnimationProgress < 1.0f || SharedConfig.getLiteMode().enabled()) {
+        if (posAnimationProgress < 1.0f || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             return;
         }
         rotatingPreview = false;
