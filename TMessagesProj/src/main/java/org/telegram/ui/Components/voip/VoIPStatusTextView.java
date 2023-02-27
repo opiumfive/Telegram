@@ -75,6 +75,10 @@ public class VoIPStatusTextView extends FrameLayout {
 
     }
 
+    public void setCallEnded() {
+        if (timerView != null) timerView.setCallEnded();
+    }
+
     public void setText(String text, boolean ellipsis, boolean animated) {
         CharSequence nextString = text;
         if (ellipsis) {

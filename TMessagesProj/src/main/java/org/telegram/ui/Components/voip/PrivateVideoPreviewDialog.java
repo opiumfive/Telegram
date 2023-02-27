@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
@@ -14,6 +15,7 @@ import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.graphics.drawable.GradientDrawable;
 import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Parcelable;
@@ -37,6 +39,7 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -47,6 +50,7 @@ import org.webrtc.RendererCommon;
 import java.io.File;
 import java.io.FileOutputStream;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
@@ -73,6 +77,9 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
     private int currentPage;
 
     private boolean needScreencast;
+    private float positiveButtonProgress = 1f;
+    View bottomShadow;
+    View topShadow;
 
     public PrivateVideoPreviewDialog(Context context, boolean mic, boolean screencast) {
         super(context);
@@ -84,8 +91,19 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         AndroidUtilities.setViewPagerEdgeEffectColor(viewPager, 0x7f000000);
         viewPager.setAdapter(new Adapter());
         viewPager.setPageMargin(0);
-        viewPager.setOffscreenPageLimit(1);
+        viewPager.setOffscreenPageLimit(2);
+        viewPager.setPageTransformer(false, (page, position) -> {
+            int ind = page.getTag() == null ? -1 : (int) page.getTag();
+            //android.util.Log.d("wwttff", "ind = " + ind + " pos = " + position);
+            if (ind != -1) {
+                View view = titles[ind];
+                //view.setPivotX(position < 0f ? view.getWidth() : 0f);
+                //view.setPivotY(view.getHeight() * 0.5f);
+                view.setRotationY(90f * position * 0.33f);
+            }
+        });
         addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
             private int scrollState = ViewPager.SCROLL_STATE_IDLE;
@@ -134,6 +152,14 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         textureView.renderer.setRotateTextureWithScreen(true);
         textureView.renderer.setUseCameraRotation(true);
         addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        bottomShadow = new View(context);
+        bottomShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.5f))}));
+        addView(bottomShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.BOTTOM));
+
+        topShadow = new View(context);
+        topShadow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f)), Color.TRANSPARENT}));
+        addView(topShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 140, Gravity.TOP));
 
         ActionBar actionBar = new ActionBar(context);
         actionBar.setBackButtonDrawable(new BackDrawable(false));
@@ -189,17 +215,19 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 }
             }
 
-
             @Override
             protected void onDraw(Canvas canvas) {
-                AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth() * positiveButtonProgress, getMeasuredHeight());
                 gradientPaint[currentPage].setAlpha(255);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), gradientPaint[currentPage]);
                 if (pageOffset > 0 && currentPage + 1 < gradientPaint.length) {
                     gradientPaint[currentPage + 1].setAlpha((int) (255 * pageOffset));
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), gradientPaint[currentPage + 1]);
                 }
+                canvas.save();
+                canvas.translate(-AndroidUtilities.dp(80) * (1- positiveButtonProgress), 0);
                 super.onDraw(canvas);
+                canvas.restore();
             }
         };
         positiveButton.setMinWidth(AndroidUtilities.dp(64));
@@ -235,7 +263,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
             titles[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             titles[a].setTextColor(0xffffffff);
             titles[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            titles[a].setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
+            titles[a].setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
             titles[a].setGravity(Gravity.CENTER_VERTICAL);
             titles[a].setSingleLine(true);
             titlesLayout.addView(titles[a], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
@@ -251,27 +279,35 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         }
 
         setAlpha(0);
-        setTranslationX(AndroidUtilities.dp(32));
-        animate().alpha(1f).translationX(0).setDuration(150).start();
+        int h = AndroidUtilities.getRealScreenSize().y / 2;
+        int w = AndroidUtilities.getRealScreenSize().x / 4;
+        setTranslationY(h);
+        setScaleX(0.5f);
+        setTranslationX(-w);
+        setScaleY(0.5f);
+        animate().alpha(1f).scaleX(1f).scaleY(1f).translationX(0).translationY(0).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+
+        titlesLayout.setScaleX(0.5f);
+        titlesLayout.setScaleY(0.5f);
+        titlesLayout.setAlpha(0f);
+        titlesLayout.setTranslationY(AndroidUtilities.dp(50));
+        titlesLayout.animate().setStartDelay(100).alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+
+        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+        animator.setStartDelay(100);
+        animator.setDuration(200);
+        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        animator.addUpdateListener(animation -> {
+            float pr = (float) animation.getAnimatedValue();
+            positiveButtonProgress = pr;
+            positiveButton.invalidate();
+        });
+        animator.start();
 
         setWillNotDraw(false);
 
-        VoIPService service = VoIPService.getSharedInstance();
-        if (service != null) {
-            textureView.renderer.setMirror(service.isFrontFaceCamera());
-            textureView.renderer.init(VideoCapturerDevice.getEglBase().getEglBaseContext(), new RendererCommon.RendererEvents() {
-                @Override
-                public void onFirstFrameRendered() {
+        AndroidUtilities.runOnUIThread(this::setupTexture, 300);
 
-                }
-
-                @Override
-                public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
-
-                }
-            });
-            service.setLocalSink(textureView.renderer, false);
-        }
         viewPager.setCurrentItem(needScreencast ? 1 : 0);
 
         if (mic) {
@@ -295,6 +331,25 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 micIcon.start();
             });
             addView(micIconView, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.BOTTOM, 24, 0, 0, 136));
+        }
+    }
+
+    private void setupTexture() {
+        VoIPService service = VoIPService.getSharedInstance();
+        if (service != null) {
+            textureView.renderer.setMirror(service.isFrontFaceCamera());
+            textureView.renderer.init(VideoCapturerDevice.getEglBase().getEglBaseContext(), new RendererCommon.RendererEvents() {
+                @Override
+                public void onFirstFrameRendered() {
+
+                }
+
+                @Override
+                public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
+
+                }
+            });
+            service.setLocalSink(textureView.renderer, false);
         }
     }
 
@@ -329,6 +384,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 alpha = 0.7f + 0.3f * pageOffset;
                 scale = 0.9f + 0.1f * pageOffset;
             }
+
             titles[a].setAlpha(alpha);
             titles[a].setScaleX(scale);
             titles[a].setScaleY(scale);
@@ -432,7 +488,9 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         isDismissed = true;
         saveLastCameraBitmap();
         onDismiss(screencast, apply);
-        animate().alpha(0f).translationX(AndroidUtilities.dp(32)).setDuration(150).setListener(new AnimatorListenerAdapter() {
+        int h = AndroidUtilities.getRealScreenSize().y / 2;
+        int w = AndroidUtilities.getRealScreenSize().x / 4;
+        animate().alpha(0f).translationY(h).translationX(-w).scaleX(0.5f).scaleY(0.5f).setDuration(250).setListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
@@ -550,6 +608,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 ViewGroup parent = (ViewGroup) view.getParent();
                 parent.removeView(view);
             }
+            view.setTag(position);
             container.addView(view, 0);
             return view;
         }

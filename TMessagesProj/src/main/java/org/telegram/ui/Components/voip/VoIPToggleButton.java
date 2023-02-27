@@ -26,9 +26,11 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 
 public class VoIPToggleButton extends FrameLayout {
@@ -37,6 +39,8 @@ public class VoIPToggleButton extends FrameLayout {
     private boolean drawBackground = true;
     private boolean animateBackground;
     Drawable[] icon = new Drawable[2];
+    //private RLottieDrawable animatedIcon;
+    private boolean animatedDrawable = false;
 
     FrameLayout textLayoutContainer;
     TextView[] textView = new TextView[2];
@@ -238,8 +242,12 @@ public class VoIPToggleButton extends FrameLayout {
         invalidate();
     }
 
-    public void setData(int iconRes, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
-        setData(iconRes, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
+    public void setData(int iconRes, boolean animatedDrawable, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
+        setData(iconRes, animatedDrawable, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
+    }
+
+    public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
+        setData(iconRes, false, iconColor, backgroundColor, selectorAlpha, recreateRipple, text, cross, animated);
     }
 
     public void setEnabled(boolean enabled, boolean animated) {
@@ -252,115 +260,231 @@ public class VoIPToggleButton extends FrameLayout {
         }
     }
 
-    public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
+    public void setData(int iconRes, boolean animatedDrawable, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
+        this.animatedDrawable = animatedDrawable;
         if (getVisibility() != View.VISIBLE) {
             animated = false;
             setVisibility(View.VISIBLE);
         }
 
-        if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text)) && cross == this.drawCross) {
-            return;
-        }
+        if (animatedDrawable) {
 
-        if (rippleDrawable == null || recreateRipple) {
-            if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
-                rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f * selectorAlpha)));
-                rippleDrawable.setCallback(this);
-            } else {
-                rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f * selectorAlpha)));
-                rippleDrawable.setCallback(this);
-            }
-        }
-
-        if (replaceAnimator != null) {
-            replaceAnimator.cancel();
-        }
-        animateBackground = currentBackgroundColor != backgroundColor;
-
-        iconChangeColor = currentIconRes == iconRes;
-        if (iconChangeColor) {
-            replaceColorFrom = currentIconColor;
-        }
-        currentIconRes = iconRes;
-        currentIconColor = iconColor;
-        currentBackgroundColor = backgroundColor;
-        currentText = text;
-        drawCross = cross;
-
-        if (!animated) {
-            if (iconRes != 0) {
-                icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
-                icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
-            }
-            crossPaint.setColor(iconColor);
-            if (!checkable) {
-                this.backgroundColor = backgroundColor;
-            }
-            textView[0].setText(text);
-            crossProgress = drawCross ? 1f : 0;
-            iconChangeColor = false;
-            replaceProgress = 0f;
-            invalidate();
-        } else {
-            if (!iconChangeColor && iconRes != 0) {
-                icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
-                icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
-            }
-            if (!checkable) {
-                this.animateToBackgroundColor = backgroundColor;
+            if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text)) && cross == this.drawCross) {
+                return;
             }
 
-            boolean animateText = !textView[0].getText().toString().equals(text);
+            if (rippleDrawable == null || recreateRipple) {
+                if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f * selectorAlpha)));
+                    rippleDrawable.setCallback(this);
+                } else {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f * selectorAlpha)));
+                    rippleDrawable.setCallback(this);
+                }
+            }
 
-            if (!animateText) {
+            if (replaceAnimator != null) {
+                replaceAnimator.cancel();
+            }
+            animateBackground = currentBackgroundColor != backgroundColor;
+
+            iconChangeColor = currentIconRes == iconRes;
+            if (iconChangeColor) {
+                replaceColorFrom = currentIconColor;
+            }
+            currentIconRes = iconRes;
+            currentIconColor = iconColor;
+            currentBackgroundColor = backgroundColor;
+            currentText = text;
+            drawCross = cross;
+
+            if (!animated) {
+                if (iconRes != 0) {
+                    RLottieDrawable dr = new RLottieDrawable(iconRes, "" + iconRes, AndroidUtilities.dp(48), AndroidUtilities.dp(48));
+                    dr.setMasterParent(this);
+                    icon[0] = dr;
+                    icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                }
+                crossPaint.setColor(iconColor);
+                if (!checkable) {
+                    this.backgroundColor = backgroundColor;
+                }
                 textView[0].setText(text);
-            } else {
-                textView[1].setText(text);
-                textView[1].setVisibility(View.VISIBLE);
-                textView[1].setAlpha(0);
-                textView[1].setScaleX(0);
-                textView[1].setScaleY(0);
-            }
-            replaceAnimator = ValueAnimator.ofFloat(0, 1f);
-            replaceAnimator.addUpdateListener(valueAnimator -> {
-                replaceProgress = (float) valueAnimator.getAnimatedValue();
+                crossProgress = drawCross ? 1f : 0;
+                iconChangeColor = false;
+                replaceProgress = 0f;
                 invalidate();
-
-                if (animateText) {
-                    textView[0].setAlpha(1f - replaceProgress);
-                    textView[0].setScaleX(1f - replaceProgress);
-                    textView[0].setScaleY(1f - replaceProgress);
-
-                    textView[1].setAlpha(replaceProgress);
-                    textView[1].setScaleX(replaceProgress);
-                    textView[1].setScaleY(replaceProgress);
+            } else {
+                if (!iconChangeColor && iconRes != 0) {
+                    RLottieDrawable dr = new RLottieDrawable(iconRes, "" + iconRes, AndroidUtilities.dp(48), AndroidUtilities.dp(48));
+                    dr.setMasterParent(this);
+                    dr.start();
+                    icon[1] = dr;
+                    icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
                 }
-            });
-            replaceAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    replaceAnimator = null;
-                    if (animateText) {
-                        TextView tv = textView[0];
-                        textView[0] = textView[1];
-                        textView[1] = tv;
-                        textView[1].setVisibility(View.GONE);
-                    }
+                if (!checkable) {
+                    this.animateToBackgroundColor = backgroundColor;
+                }
 
-                    if (!iconChangeColor && icon[1] != null) {
-                        icon[0] = icon[1];
-                        icon[1] = null;
-                    }
-                    iconChangeColor = false;
-                    if (!checkable) {
-                        VoIPToggleButton.this.backgroundColor = animateToBackgroundColor;
-                    }
-                    replaceProgress = 0f;
+                boolean animateText = !textView[0].getText().toString().equals(text);
+
+                if (!animateText) {
+                    textView[0].setText(text);
+                } else {
+                    textView[1].setText(text);
+                    textView[1].setVisibility(View.VISIBLE);
+                    textView[1].setAlpha(0);
+                    textView[1].setScaleX(0);
+                    textView[1].setScaleY(0);
+                }
+                replaceAnimator = ValueAnimator.ofFloat(0, 1f);
+                replaceAnimator.addUpdateListener(valueAnimator -> {
+                    replaceProgress = (float) valueAnimator.getAnimatedValue();
                     invalidate();
+
+                    if (animateText) {
+                        textView[0].setAlpha(1f - replaceProgress);
+                        textView[0].setScaleX(1f - replaceProgress);
+                        textView[0].setScaleY(1f - replaceProgress);
+
+                        textView[1].setAlpha(replaceProgress);
+                        textView[1].setScaleX(replaceProgress);
+                        textView[1].setScaleY(replaceProgress);
+                    }
+                });
+                replaceAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        replaceAnimator = null;
+                        if (animateText) {
+                            TextView tv = textView[0];
+                            textView[0] = textView[1];
+                            textView[1] = tv;
+                            textView[1].setVisibility(View.GONE);
+                        }
+
+                        if (!iconChangeColor && icon[1] != null) {
+                            icon[0] = icon[1];
+                            icon[1] = null;
+                        }
+                        iconChangeColor = false;
+                        if (!checkable) {
+                            VoIPToggleButton.this.backgroundColor = animateToBackgroundColor;
+                        }
+                        replaceProgress = 0f;
+                        invalidate();
+                    }
+                });
+                replaceAnimator.setDuration(150).start();
+                invalidate();
+            }
+
+        } else {
+
+            if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text)) && cross == this.drawCross) {
+                return;
+            }
+
+            if (rippleDrawable == null || recreateRipple) {
+                if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f * selectorAlpha)));
+                    rippleDrawable.setCallback(this);
+                } else {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f * selectorAlpha)));
+                    rippleDrawable.setCallback(this);
                 }
-            });
-            replaceAnimator.setDuration(150).start();
-            invalidate();
+            }
+
+            if (replaceAnimator != null) {
+                replaceAnimator.cancel();
+            }
+            animateBackground = currentBackgroundColor != backgroundColor;
+
+            iconChangeColor = currentIconRes == iconRes;
+            if (iconChangeColor) {
+                replaceColorFrom = currentIconColor;
+            }
+            currentIconRes = iconRes;
+            currentIconColor = iconColor;
+            currentBackgroundColor = backgroundColor;
+            currentText = text;
+            drawCross = cross;
+
+            if (!animated) {
+                if (iconRes != 0) {
+                    icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
+                    icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                }
+                crossPaint.setColor(iconColor);
+                if (!checkable) {
+                    this.backgroundColor = backgroundColor;
+                }
+                textView[0].setText(text);
+                crossProgress = drawCross ? 1f : 0;
+                iconChangeColor = false;
+                replaceProgress = 0f;
+                invalidate();
+            } else {
+                if (!iconChangeColor && iconRes != 0) {
+                    icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
+                    icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                }
+                if (!checkable) {
+                    this.animateToBackgroundColor = backgroundColor;
+                }
+
+                boolean animateText = !textView[0].getText().toString().equals(text);
+
+                if (!animateText) {
+                    textView[0].setText(text);
+                } else {
+                    textView[1].setText(text);
+                    textView[1].setVisibility(View.VISIBLE);
+                    textView[1].setAlpha(0);
+                    textView[1].setScaleX(0);
+                    textView[1].setScaleY(0);
+                }
+                replaceAnimator = ValueAnimator.ofFloat(0, 1f);
+                replaceAnimator.addUpdateListener(valueAnimator -> {
+                    replaceProgress = (float) valueAnimator.getAnimatedValue();
+                    invalidate();
+
+                    if (animateText) {
+                        textView[0].setAlpha(1f - replaceProgress);
+                        textView[0].setScaleX(1f - replaceProgress);
+                        textView[0].setScaleY(1f - replaceProgress);
+
+                        textView[1].setAlpha(replaceProgress);
+                        textView[1].setScaleX(replaceProgress);
+                        textView[1].setScaleY(replaceProgress);
+                    }
+                });
+                replaceAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        replaceAnimator = null;
+                        if (animateText) {
+                            TextView tv = textView[0];
+                            textView[0] = textView[1];
+                            textView[1] = tv;
+                            textView[1].setVisibility(View.GONE);
+                        }
+
+                        if (!iconChangeColor && icon[1] != null) {
+                            icon[0] = icon[1];
+                            icon[1] = null;
+                        }
+                        iconChangeColor = false;
+                        if (!checkable) {
+                            VoIPToggleButton.this.backgroundColor = animateToBackgroundColor;
+                        }
+                        replaceProgress = 0f;
+                        invalidate();
+                    }
+                });
+                replaceAnimator.setDuration(150).start();
+                invalidate();
+            }
         }
     }
 

@@ -139,6 +139,7 @@ public class SharedConfig {
     public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
     public static boolean autoplayGifs = true;
     public static boolean autoplayVideo = true;
+    public static boolean callEmojiHintPressed = false;
     public static boolean raiseToSpeak = false;
     public static boolean recordViaSco = false;
     public static boolean customTabs = true;
@@ -440,6 +441,7 @@ public class SharedConfig {
             useSystemEmoji = preferences.getBoolean("useSystemEmoji", false);
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
+            callEmojiHintPressed = preferences.getBoolean("callEmojiHintPressed", false);
             smoothKeyboard = preferences.getBoolean("smoothKeyboard2", true);
             pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", false);
             chatBlur = preferences.getBoolean("chatBlur", true);
@@ -1223,6 +1225,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("saveStreamMedia", saveStreamMedia);
+        editor.commit();
+    }
+
+    public static void setCallEmogiHintPressed(boolean pressed) {
+        callEmojiHintPressed = pressed;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("callEmojiHintPressed", callEmojiHintPressed);
         editor.commit();
     }
 

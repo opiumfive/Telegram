@@ -4000,10 +4000,16 @@
     <string name="VoipAudioRoutingSpeaker">Speaker</string>
     <string name="VoipAudioRoutingPhone">Phone</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
-    <string name="VoipOutputDevices">Output Devices</string>
+    <string name="VoipOutputDevices">Output devices</string>
     <string name="ReturnToCall">RETURN TO CALL</string>
     <string name="CallNotAvailable">Sorry, **%1$s** doesn\'t accept calls.</string>
     <string name="CallEmojiKeyTooltip">If emoji on %1$s\'s screen are the same, this call is 100%% secure.</string>
+    <string name="CallEmojiKeyTooltipTitle">This call is end-to-end encrypted.</string>
+    <string name="CallEmojiKeyTooltipBold">If emoji on **%1$s\'s** screen are the same, this call is 100%% secure.</string>
+    <string name="CallEncryptionKeyHint">Encryption key of this call</string>
+    <string name="CallHideEmoji">Hide emoji</string>
+    <string name="CallRateCallTitle">Rate this call</string>
+    <string name="CallRateCallSubtitle">Please rate the quality of this call.</string>
     <string name="CallMessageReportProblem">Rate Call</string>
     <string name="CallReportHint">What went wrong?</string>
     <string name="CallReportIncludeLogs">Include technical information</string>

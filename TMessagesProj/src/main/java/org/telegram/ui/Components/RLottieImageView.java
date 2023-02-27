@@ -74,6 +74,16 @@ public class RLottieImageView extends ImageView {
         setAnimation(new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(w), AndroidUtilities.dp(h), false, colorReplacement));
     }
 
+    public void setAnimation(int resId, int w, int h, int id) {
+        setAnimation(new RLottieDrawable(resId, "" + resId + "" + id, AndroidUtilities.dp(w), AndroidUtilities.dp(h), true, null));
+    }
+
+    public void setCurrentFrame(int i) {
+        if (drawable != null) {
+            drawable.setCurrentFrame(i);
+        }
+    }
+
     public void setOnAnimationEndListener(Runnable r) {
         if (drawable != null) {
             drawable.setOnAnimationEndListener(r);

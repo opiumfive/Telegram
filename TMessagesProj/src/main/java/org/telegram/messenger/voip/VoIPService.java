@@ -32,6 +32,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -79,6 +80,7 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AccountInstance;
@@ -2662,22 +2664,55 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	public void toggleSpeakerphoneOrShowRouteSheet(Context context, boolean fromOverlayWindow) {
 		if (isBluetoothHeadsetConnected() && hasEarpiece()) {
-			BottomSheet.Builder builder = new BottomSheet.Builder(context)
-					.setTitle(LocaleController.getString("VoipOutputDevices", R.string.VoipOutputDevices), true)
-					.setItems(new CharSequence[]{
-									LocaleController.getString("VoipAudioRoutingSpeaker", R.string.VoipAudioRoutingSpeaker),
-									isHeadsetPlugged ? LocaleController.getString("VoipAudioRoutingHeadset", R.string.VoipAudioRoutingHeadset) : LocaleController.getString("VoipAudioRoutingEarpiece", R.string.VoipAudioRoutingEarpiece),
-									currentBluetoothDeviceName != null ? currentBluetoothDeviceName : LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth)},
-							new int[]{R.drawable.calls_menu_speaker,
-									isHeadsetPlugged ? R.drawable.calls_menu_headset : R.drawable.calls_menu_phone,
-									R.drawable.calls_menu_bluetooth}, (dialog, which) -> {
-								if (getSharedInstance() == null) {
-									return;
-								}
-								setAudioOutput(which);
-							});
 
+			ArrayList<CharSequence> names = new ArrayList<>();
+			ArrayList<Integer> icons = new ArrayList<>();
+			ArrayList<Integer> options = new ArrayList<>();
+
+			names.add(LocaleController.getString("VoipAudioRoutingSpeaker", R.string.VoipAudioRoutingSpeaker));
+			icons.add(R.drawable.msg_voice_speaker);
+			options.add(0);
+
+			if (hasEarpiece()) {
+				names.add(isHeadsetPlugged() ? LocaleController.getString("VoipAudioRoutingHeadset", R.string.VoipAudioRoutingHeadset) : LocaleController.getString("VoipAudioRoutingEarpiece", R.string.VoipAudioRoutingEarpiece));
+				icons.add(isHeadsetPlugged() ? R.drawable.msg_voice_headphones : R.drawable.msg_voice_phone);
+				options.add(1);
+			}
+
+			if (isBluetoothHeadsetConnected()) {
+				names.add(currentBluetoothDeviceName != null ? currentBluetoothDeviceName : LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth));
+				icons.add(R.drawable.msg_voice_bluetooth);
+				options.add(2);
+			}
+
+			int n = names.size();
+			CharSequence[] itemsArray = new CharSequence[n];
+			int[] iconsArray = new int[n];
+			for (int i = 0; i < n; i++) {
+				itemsArray[i] = names.get(i);
+				iconsArray[i] = icons.get(i);
+			}
+
+			BottomSheet.Builder builder = new BottomSheet.Builder(context)
+					.setTitle(LocaleController.getString("VoipSelectAudioOutput", R.string.VoipSelectAudioOutput), true)
+					.setItems(itemsArray, iconsArray, (dialog, which) -> {
+						if (getSharedInstance() == null) {
+							return;
+						}
+						setAudioOutput(options.get(which));
+					});
 			BottomSheet bottomSheet = builder.create();
+
+			bottomSheet.setBackgroundColor(Color.WHITE);
+			bottomSheet.fixNavigationBar(Color.WHITE);
+			int selectedPosition;
+			if (getCurrentAudioRoute() == VoIPService.AUDIO_ROUTE_SPEAKER) {
+				selectedPosition = 0;
+			} else if (getCurrentAudioRoute() == VoIPService.AUDIO_ROUTE_EARPIECE) {
+				selectedPosition = 1;
+			} else {
+				selectedPosition = 2;
+			}
 			if (fromOverlayWindow) {
 				if (Build.VERSION.SDK_INT >= 26) {
 					bottomSheet.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
@@ -2686,6 +2721,22 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			}
 			builder.show();
+			bottomSheet.setTitleColor(0xff222222);
+			for (int i = 0; i < bottomSheet.getItemViews().size(); i++) {
+				BottomSheet.BottomSheetCell cell = bottomSheet.getItemViews().get(i);
+				int color;
+				if (i == selectedPosition) {
+					color = 0xff0489E8;
+					cell.isSelected = true;
+				} else {
+					color = 0xff222222;
+				}
+				cell.setTextColor(color);
+				cell.setIconColor(color);
+				cell.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_actionBarItems), (int) (255 * 0.05f)), 2));
+			}
+
+
 			return;
 		}
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null && systemCallConnection.getCallAudioState() != null) {
@@ -3057,6 +3108,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						}
 					});
 				}
+				am.setSpeakerphoneOn(false);
 				am.abandonAudioFocus(this);
 			}
 			try {
@@ -3402,10 +3454,19 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				e.printStackTrace();
 			}
 		}
-		
+		android.util.Log.d("wwttff", "rate: needRateCall=" + needRateCall + "; forceRating=" + forceRating + "; isRatingSuggested=" + finalState.isRatingSuggested);
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
-			startRatingActivity();
+			if (VoIPFragment.getInstance() != null) {
+				VoIPFragment.getInstance().onNeedRate(true, privateCall.id, privateCall.access_hash, privateCall.video);
+			} else {
+				startRatingActivity();
+			}
+
 			needRateCall = false;
+		} else {
+			if (VoIPFragment.getInstance() != null) {
+				VoIPFragment.getInstance().onNeedRate(false, 0,0, false);
+			}
 		}
 		if (needSendDebugLog && finalState.debugLog != null) {
 			TLRPC.TL_phone_saveCallDebug req = new TLRPC.TL_phone_saveCallDebug();

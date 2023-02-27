@@ -197,6 +197,7 @@ import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Components.voip.VoipTestFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -2490,6 +2491,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searchWas = false;
         pacmanAnimation = null;
         selectedDialogs.clear();
+
+        presentFragment(new VoipTestFragment());
 
         maximumVelocity = ViewConfiguration.get(context).getScaledMaximumFlingVelocity();
 
