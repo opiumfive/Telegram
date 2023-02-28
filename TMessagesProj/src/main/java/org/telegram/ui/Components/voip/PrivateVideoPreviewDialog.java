@@ -490,7 +490,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         onDismiss(screencast, apply);
         int h = AndroidUtilities.getRealScreenSize().y / 2;
         int w = AndroidUtilities.getRealScreenSize().x / 4;
-        animate().alpha(0f).translationY(h).translationX(-w).scaleX(0.5f).scaleY(0.5f).setDuration(250).setListener(new AnimatorListenerAdapter() {
+        animate().alpha(0.25f).translationY(h).translationX(-w).scaleX(0.25f).scaleY(0.25f).setStartDelay(200).setDuration(150).setListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);

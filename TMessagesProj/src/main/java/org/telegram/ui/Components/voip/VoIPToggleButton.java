@@ -242,12 +242,12 @@ public class VoIPToggleButton extends FrameLayout {
         invalidate();
     }
 
-    public void setData(int iconRes, boolean animatedDrawable, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
-        setData(iconRes, animatedDrawable, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
+    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
+        setData(iconRes, animatedDrawable, startFrame, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
     }
 
     public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
-        setData(iconRes, false, iconColor, backgroundColor, selectorAlpha, recreateRipple, text, cross, animated);
+        setData(iconRes, false, 0, iconColor, backgroundColor, selectorAlpha, recreateRipple, text, cross, animated);
     }
 
     public void setEnabled(boolean enabled, boolean animated) {
@@ -260,7 +260,11 @@ public class VoIPToggleButton extends FrameLayout {
         }
     }
 
-    public void setData(int iconRes, boolean animatedDrawable, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
+    public int getCurrentIconRes() {
+        return currentIconRes;
+    }
+
+    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
         this.animatedDrawable = animatedDrawable;
         if (getVisibility() != View.VISIBLE) {
             animated = false;
@@ -302,6 +306,7 @@ public class VoIPToggleButton extends FrameLayout {
                 if (iconRes != 0) {
                     RLottieDrawable dr = new RLottieDrawable(iconRes, "" + iconRes, AndroidUtilities.dp(48), AndroidUtilities.dp(48));
                     dr.setMasterParent(this);
+                    dr.setCurrentFrame(startFrame);
                     icon[0] = dr;
                     icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
                 }
@@ -318,6 +323,7 @@ public class VoIPToggleButton extends FrameLayout {
                 if (!iconChangeColor && iconRes != 0) {
                     RLottieDrawable dr = new RLottieDrawable(iconRes, "" + iconRes, AndroidUtilities.dp(48), AndroidUtilities.dp(48));
                     dr.setMasterParent(this);
+                    dr.setCurrentFrame(startFrame);
                     dr.start();
                     icon[1] = dr;
                     icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
