@@ -75,9 +75,11 @@ public class VoIPNotificationsLayout extends LinearLayout {
             return;
         }
 
-        NotificationView view = new NotificationView(getContext());
+        NotificationView view = new NotificationView(getContext(), iconRes != 0);
         view.tag = tag;
-        view.iconView.setImageResource(iconRes);
+        if (iconRes != 0) {
+            view.iconView.setImageResource(iconRes);
+        }
         view.textView.setText(text);
         viewsByTag.put(tag, view);
 
@@ -186,20 +188,25 @@ public class VoIPNotificationsLayout extends LinearLayout {
         public String tag;
         ImageView iconView;
         TextView textView;
+        boolean withIcon = true;
 
-        public NotificationView(@NonNull Context context) {
+        public NotificationView(@NonNull Context context, boolean withIcon) {
             super(context);
             setFocusable(true);
             setFocusableInTouchMode(true);
 
-            iconView = new ImageView(context);
-            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f))));
-            addView(iconView, LayoutHelper.createFrame(24, 24, 0, 10, 4, 10, 4));
+            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), 0x10000000));
+
+            if (withIcon) {
+                iconView = new ImageView(context);
+
+                addView(iconView, LayoutHelper.createFrame(24, 24, 0, 10, 4, 10, 4));
+            }
 
             textView = new TextView(context);
             textView.setTextColor(Color.WHITE);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 44, 4, 16, 4));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, withIcon ? 44 : 16, 4, 16, 4));
         }
 
         public void startAnimation() {

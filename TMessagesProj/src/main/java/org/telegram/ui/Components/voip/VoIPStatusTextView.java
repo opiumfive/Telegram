@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -57,17 +58,19 @@ public class VoIPStatusTextView extends FrameLayout {
 
         reconnectTextView = new TextView(context);
         reconnectTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        reconnectTextView.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
+        //reconnectTextView.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
+        reconnectTextView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), 0x10000000));
+        reconnectTextView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(2), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
         reconnectTextView.setTextColor(Color.WHITE);
         reconnectTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 22, 0, 0));
+        addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
         ellipsizeAnimator = new EllipsizeSpanAnimator(this);
         SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString("VoipReconnecting", R.string.VoipReconnecting));
         SpannableString ell = new SpannableString("...");
         ellipsizeAnimator.wrap(ell, 0);
         ssb.append(ell);
-        reconnectTextView.setText(ssb);
+        reconnectTextView.setText(LocaleController.getString("CallWeakSignal", R.string.CallWeakSignal));
         reconnectTextView.setVisibility(View.GONE);
 
         timerView = new VoIPTimerView(context);
@@ -236,11 +239,13 @@ public class VoIPStatusTextView extends FrameLayout {
                 if (reconnectTextView.getVisibility() != View.VISIBLE) {
                     reconnectTextView.setVisibility(View.VISIBLE);
                     reconnectTextView.setAlpha(0);
+                    reconnectTextView.setScaleX(0.2f);
+                    reconnectTextView.setScaleY(0.2f);
                 }
                 reconnectTextView.animate().setListener(null).cancel();
-                reconnectTextView.animate().alpha(1f).setDuration(150).start();
+                reconnectTextView.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(175).start();
             } else {
-                reconnectTextView.animate().alpha(0).setListener(new AnimatorListenerAdapter() {
+                reconnectTextView.animate().alpha(0).scaleX(0.2f).scaleY(0.2f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         reconnectTextView.setVisibility(View.GONE);

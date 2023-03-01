@@ -245,6 +245,16 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             updateViewState();
         }
     };
+    boolean pauseMagicAnimationsRunnableWaiting;
+    Runnable pauseMagicAnimationsRunnable = () -> {
+        hideUiRunnableWaiting = false;
+
+        lastContentTapTime = System.currentTimeMillis();
+        if (backgroundImage != null) backgroundImage.pause(false);
+        if (wavesView != null) wavesView.pause(false);
+
+
+    };
     private boolean lockOnScreen;
     private boolean screenWasWakeup;
     private boolean isVideoCall;
@@ -535,14 +545,18 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
     }
 
+    int signalBarsCount = 5;
+
     @Override
     public void onSignalBarsCountChanged(int count) {
+        signalBarsCount = count;
         if (statusTextView != null) {
             statusTextView.setSignalBarCount(count);
+            statusTextView.showReconnect(count < 3, true);
         }
 
         if (backgroundImage != null) {
-            backgroundImage.setState(count > 3 ? VoIPSmoothMotionView.ESTABLISHED : VoIPSmoothMotionView.WEAK_SIGNAL, null);
+            backgroundImage.setState(count >= 3 ? VoIPSmoothMotionView.ESTABLISHED : VoIPSmoothMotionView.WEAK_SIGNAL, null);
         }
     }
 
@@ -1510,7 +1524,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     .start();
 
             if (callingUserPhotoViewMini.getTag() != null ) {
-                android.util.Log.d("wwttff", "expandEmoji !expanded show avatar");
                 callingUserPhotoViewMini.animate().setListener(null).cancel();
                 wavesView.animate().setListener(null).cancel();
                 callingUserPhotoViewMini.animate().scaleX(1f).scaleY(1f).alpha(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(250).start();
@@ -1624,7 +1637,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     //backgroundImage.setState(VoIPSmoothMotionView.WEAK_SIGNAL);
                 }
                 showTimer = true;
-                if (currentState == VoIPService.STATE_RECONNECTING) {
+                if (currentState == VoIPService.STATE_RECONNECTING || signalBarsCount < 3) {
                     showReconnecting = true;
                 }
                 break;
@@ -1827,7 +1840,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             statusTextView.showTimer(animated);
         }
 
-        statusTextView.showReconnect(showReconnecting, animated);
+        //statusTextView.showReconnect(showReconnecting, animated);
 
         if (animated) {
             if (statusLayoutOffset != statusLayoutAnimateToOffset) {
@@ -1869,6 +1882,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 } else {
                     notificationsLayout.removeNotification("muted");
                 }
+                if (service.isMicMute()) {
+                    notificationsLayout.addNotification(0, LocaleController.getString("CallYourMicroOff", R.string.CallYourMicroOff), "you_muted", animated);
+                } else {
+                    notificationsLayout.removeNotification("you_muted");
+                }
                 if (service.getRemoteVideoState() == Instance.VIDEO_STATE_INACTIVE) {
                     notificationsLayout.addNotification(R.drawable.calls_camera_mini, LocaleController.formatString("VoipUserCameraIsOff", R.string.VoipUserCameraIsOff, UserObject.getFirstName(callingUser)), "video", animated);
                 } else {
@@ -1879,6 +1897,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     notificationsLayout.addNotification(R.drawable.calls_mute_mini, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
                 } else {
                     notificationsLayout.removeNotification("muted");
+                }
+                if (service.isMicMute()) {
+                    notificationsLayout.addNotification(0, LocaleController.getString("CallYourMicroOff", R.string.CallYourMicroOff), "you_muted", animated);
+                } else {
+                    notificationsLayout.removeNotification("you_muted");
                 }
                 notificationsLayout.removeNotification("video");
             }
@@ -2110,7 +2133,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     callingUserPhotoViewMini.setTag(1);
                 }
                 expandEmoji(false);
-            } else if (show && callingUserPhotoViewMini.getTag() != null) {
+            } /*else if (show && callingUserPhotoViewMini.getTag() != null) {
                 callingUserPhotoViewMini.animate().setListener(null).cancel();
                 wavesView.animate().setListener(null).cancel();
                 wavesView.setAlpha(1f);
@@ -2123,7 +2146,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 callingUserPhotoViewMini.setTranslationY(0);
                 callingUserPhotoViewMini.setScaleX(1f);
                 callingUserPhotoViewMini.setScaleY(1f);
-            } else if (show && callingUserPhotoViewMini.getTag() == null) {
+            }*/ else if (show && callingUserPhotoViewMini.getTag() == null) {
                 callingUserPhotoViewMini.animate().setListener(null).cancel();
                 callingUserPhotoViewMini.setVisibility(View.VISIBLE);
                 callingUserPhotoViewMini.setAlpha(0);
@@ -2134,12 +2157,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 if (!isRateView) {
                     wavesView.setVisibility(View.VISIBLE);
 
-                    wavesView.setAlpha(0);
+
                     wavesView.setTranslationY(-AndroidUtilities.dp(256));
-                    wavesView.animate().alpha(1f).translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+                    wavesView.animate().translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
                 } else {
                     wavesView.animate().setListener(null).cancel();
-                    wavesView.animate().alpha(0).translationY(-AndroidUtilities.dp(256)).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT)
+                    wavesView.animate().translationY(-AndroidUtilities.dp(256)).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT)
                             .setListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
@@ -2158,7 +2181,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                         }).start();
 
                 wavesView.animate().setListener(null).cancel();
-                wavesView.animate().alpha(0).translationY(-AndroidUtilities.dp(256)).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT)
+                wavesView.animate().translationY(-AndroidUtilities.dp(256)).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT)
                         .setListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
@@ -2173,7 +2196,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             callingUserPhotoViewMini.setVisibility(show ? View.VISIBLE : View.GONE);
             wavesView.animate().setListener(null).cancel();
             wavesView.setTranslationY(0);
-            wavesView.setAlpha(1f);
+            //wavesView.setAlpha(1f);
             wavesView.setVisibility(show ? View.VISIBLE : View.GONE);
         }
         callingUserPhotoViewMini.setTag(show ? 1 : null);
@@ -2814,7 +2837,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             statusLayout.animate().setListener(null).cancel();
             statusLayout.animate().translationY(statusLayout.getTranslationY()-AndroidUtilities.dp(30)).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250).start();
             wavesView.animate().setListener(null).cancel();
-            wavesView.animate().scaleX(0f).scaleY(0f).alpha(0f).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(150).start();
+            wavesView.animate().scaleX(0f).scaleY(0f).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(150).start();
         } else {
             showCallingUserAvatarMini(true, true);
         }

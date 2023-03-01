@@ -20,7 +20,7 @@ public class VoIPWavesView extends View {
     private float animateToAmplitude;
     private float animateAmplitudeDiff;
     private long lastUpdateTime;
-    private boolean isWithShadows;
+    private final boolean isWithShadows;
     private final BlobDrawable tinyWaveDrawable;
     private final BlobDrawable bigWaveDrawable;
     private float wavesEnterAnimation = 1f;
@@ -28,10 +28,6 @@ public class VoIPWavesView extends View {
     private float drawingCx, drawingCy;
     private int size;
     private int maxSize;
-
-    //public VoIPWavesView(Context context, int minSizeDp) {
-      //  this(context, minSizeDp, (int) (minSizeDp * 1.1f), 6, 8, true);
-    //}
 
     public VoIPWavesView(Context context, int minSizeDp) {
         this(context, minSizeDp, (int) (minSizeDp * 1.1f), 12, 14, true);
@@ -150,5 +146,13 @@ public class VoIPWavesView extends View {
             wavesEnterAnimation = b ? 1f : 0.5f;
         }
         showWaves = b;
+    }
+
+    public void pause(boolean immediate) {
+        //TODO
+    }
+
+    public void resume() {
+        //TODO
     }
 }

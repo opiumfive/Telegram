@@ -4012,6 +4012,8 @@
     <string name="CallEmojiKeyTooltipBold">If emoji on **%1$s\'s** screen are the same, this call is 100%% secure.</string>
     <string name="CallEncryptionKeyHint">Encryption key of this call</string>
     <string name="CallHideEmoji">Hide emoji</string>
+    <string name="CallYourMicroOff">Your microphone is turned off</string>
+    <string name="CallWeakSignal">Weak network signal</string>
     <string name="CallRateCallTitle">Rate this call</string>
     <string name="CallRateCallSubtitle">Please rate the quality of this call.</string>
     <string name="CallMessageReportProblem">Rate Call</string>

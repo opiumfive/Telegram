@@ -48,6 +48,14 @@ public class VoIPSmoothMotionView extends View {
     private float addRad = 3;
     boolean circular = false;
 
+    public void pause(boolean immediate) {
+        //TODO
+    }
+
+    public void resume() {
+        //TODO
+    }
+
     public void setState(@State int newState, PointF circular) {
         state = newState;
 
