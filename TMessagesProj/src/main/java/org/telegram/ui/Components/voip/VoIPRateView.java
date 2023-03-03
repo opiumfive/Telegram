@@ -21,7 +21,9 @@ public class VoIPRateView extends FrameLayout {
     public VoIPRateView(Context context, VoIPRatingView.OnRatingChangeListener listener) {
         super(context);
 
-        setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), 0x10000000));
+        setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(24), 0x10000000));
+        setClipChildren(false);
+        setClipToPadding(false);
 
         TextView title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -40,7 +42,7 @@ public class VoIPRateView extends FrameLayout {
 
         addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 16, 16, 0));
         addView(title2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 42, 16, 0));
-        addView(bar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 85, 16, 24));
+        addView(bar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 8, 76, 8, 16));
 
 
         bar.setOnRatingChangeListener((newRating, x) -> {

@@ -26,7 +26,7 @@ import java.util.List;
 
 public class VoIPRatingView extends FrameLayout {
 
-    private static final int STAR_SIZE_DP = 40;
+    private static final int STAR_SIZE_DP = 32;
 
     private final int numStars = 5;
     private int selectedRating = 0;
@@ -36,10 +36,13 @@ public class VoIPRatingView extends FrameLayout {
     public VoIPRatingView(Context context) {
         super(context);
 
+        setClipChildren(false);
+        setClipToPadding(false);
+
         for (int i = 0; i < numStars; i++) {
             RLottieImageView imageView = new RLottieImageView(context);
             imageView.setAnimation(R.raw.voip_star, STAR_SIZE_DP, STAR_SIZE_DP, i);
-            addView(imageView, LayoutHelper.createFrame(STAR_SIZE_DP, STAR_SIZE_DP, Gravity.LEFT, i * (STAR_SIZE_DP + 16), 0, 0, 0));
+            addView(imageView, LayoutHelper.createFrame(STAR_SIZE_DP, STAR_SIZE_DP, Gravity.LEFT, i * (STAR_SIZE_DP + 10), 0, 0, 0));
             stars.add(imageView);
         }
     }
@@ -52,7 +55,7 @@ public class VoIPRatingView extends FrameLayout {
             lastTouch = System.currentTimeMillis();
             float offset = AndroidUtilities.dp(-8);
             for (int i = 0; i < numStars; i++) {
-                if (event.getX() > offset && event.getX() < offset + AndroidUtilities.dp(STAR_SIZE_DP + 16)) {
+                if (event.getX() > offset && event.getX() < offset + AndroidUtilities.dp(STAR_SIZE_DP + 10)) {
                     if (selectedRating != i + 1) {
                         selectedRating = i + 1;
                         if (listener != null) listener.onRatingChanged(selectedRating, event.getX());
@@ -79,7 +82,7 @@ public class VoIPRatingView extends FrameLayout {
                         break;
                     }
                 }
-                offset += AndroidUtilities.dp(STAR_SIZE_DP + (i == 0 ? 8 : 16));
+                offset += AndroidUtilities.dp(STAR_SIZE_DP + (i == 0 ? 5 : 10));
             }
             return true;
         } else if (event.getAction() == MotionEvent.ACTION_CANCEL || event.getAction() == MotionEvent.ACTION_UP) {

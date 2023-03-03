@@ -3462,7 +3462,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				e.printStackTrace();
 			}
 		}
-		android.util.Log.d("wwttff", "rate: needRateCall=" + needRateCall + "; forceRating=" + forceRating + "; isRatingSuggested=" + finalState.isRatingSuggested);
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
 			if (VoIPFragment.getInstance() != null) {
 				VoIPFragment.getInstance().onNeedRate(true, privateCall.id, privateCall.access_hash, privateCall.video);

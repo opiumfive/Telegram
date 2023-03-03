@@ -38,7 +38,7 @@ public class EmojiExpandedLayout extends FrameLayout {
     public EmojiExpandedLayout(Context context) {
         super(context);
 
-        setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), 0x10000000));
+        setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(24), 0x10000000));
 
         TextView title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -52,18 +52,12 @@ public class EmojiExpandedLayout extends FrameLayout {
         emojiRationalTextView.setTextColor(Color.WHITE);
         emojiRationalTextView.setGravity(Gravity.CENTER);
 
-        addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 60, 16, 10));
-        addView(emojiRationalTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 86, 16, 16));
+        addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 80, 16, 10));
+        addView(emojiRationalTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 16, 106, 16, 16));
     }
 
     public void setData(String[] emoji, TLRPC.User user) {
         this.emoji = emoji;
-        //StickerCategoriesListView.search.fetch(UserConfig.selectedAccount, emoji1, list -> {
-        //    if (list != null) {
-                //documentIds.addAll(list.document_id);
-        //    }
-            //next.run();
-        //});
         emojiRationalTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("CallEmojiKeyTooltipBold", R.string.CallEmojiKeyTooltipBold, UserObject.getFirstName(user))));
     }
 }

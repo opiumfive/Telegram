@@ -80,6 +80,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
     private float positiveButtonProgress = 1f;
     View bottomShadow;
     View topShadow;
+    private boolean animateToFloating = false;
 
     public PrivateVideoPreviewDialog(Context context, boolean mic, boolean screencast) {
         super(context);
@@ -481,6 +482,10 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         updateTitlesLayout();
     }
 
+    public void setAnimateToFloating(boolean animateToFloating) {
+        this.animateToFloating = animateToFloating;
+    }
+
     public void dismiss(boolean screencast, boolean apply) {
         if (isDismissed) {
             return;
@@ -488,17 +493,33 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         isDismissed = true;
         saveLastCameraBitmap();
         onDismiss(screencast, apply);
-        int h = AndroidUtilities.getRealScreenSize().y / 2;
-        int w = AndroidUtilities.getRealScreenSize().x / 4;
-        animate().alpha(0.25f).translationY(h).translationX(-w).scaleX(0.25f).scaleY(0.25f).setStartDelay(200).setDuration(150).setListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-                if (getParent() != null) {
-                    ((ViewGroup) getParent()).removeView(PrivateVideoPreviewDialog.this);
+        int h = AndroidUtilities.getRealScreenSize().y / 4;
+        int w = AndroidUtilities.getRealScreenSize().x / 3;
+        if (animateToFloating) {
+            animateToFloating = false;
+            AndroidUtilities.updateViewVisibilityAnimated(titlesLayout, false);
+            AndroidUtilities.updateViewVisibilityAnimated(positiveButton, false);
+            animate().translationY(h).translationX(w).scaleX(0.23f).scaleY(0.23f).alpha(0.25f).setStartDelay(180).setDuration(220).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    if (getParent() != null) {
+                        ((ViewGroup) getParent()).removeView(PrivateVideoPreviewDialog.this);
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            animate().alpha(0.12f).translationY(h).translationX(-w).scaleX(0.12f).scaleY(0.12f).setStartDelay(200).setDuration(150).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    if (getParent() != null) {
+                        ((ViewGroup) getParent()).removeView(PrivateVideoPreviewDialog.this);
+                    }
+                }
+            });
+        }
+
         invalidate();
     }
 

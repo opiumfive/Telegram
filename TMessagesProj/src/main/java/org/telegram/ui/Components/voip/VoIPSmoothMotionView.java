@@ -300,4 +300,6 @@ public class VoIPSmoothMotionView extends View {
         cycleAnimationInProgress = false;
         AndroidUtilities.cancelRunOnUIThread(cycleBackgroundAnimation);
     }
+
+    
 }

@@ -15,7 +15,7 @@ import org.telegram.ui.Components.WaveDrawable;
 
 public class VoIPWavesView extends View {
 
-    private float scale = 1.13f;
+    private float scale = 1.4f;
     private float amplitude;
     private float animateToAmplitude;
     private float animateAmplitudeDiff;
@@ -30,18 +30,18 @@ public class VoIPWavesView extends View {
     private int maxSize;
 
     public VoIPWavesView(Context context, int minSizeDp) {
-        this(context, minSizeDp, (int) (minSizeDp * 1.1f), 12, 14, true);
+        this(context, minSizeDp, (int) (minSizeDp * 1.15f), 4, 4, true);
     }
 
     public VoIPWavesView(Context context, int minSizeDp, int maxSizeDp, int blobSize1, int blobSize2, boolean isWithShadows) {
         super(context);
 
         size = minSizeDp;
-        maxSize = maxSizeDp;
+        maxSize = minSizeDp;
         this.isWithShadows = false;
 
-        tinyWaveDrawable = new BlobDrawable(blobSize1);
-        bigWaveDrawable = new BlobDrawable(blobSize2);
+        tinyWaveDrawable = new BlobDrawable(blobSize1, true);
+        bigWaveDrawable = new BlobDrawable(blobSize2, true);
 
         tinyWaveDrawable.minRadius = AndroidUtilities.dp(size / 2);
         tinyWaveDrawable.maxRadius = AndroidUtilities.dp(maxSize / 2);
@@ -99,9 +99,9 @@ public class VoIPWavesView extends View {
         }
 
         bigWaveDrawable.updateAmplitude(dt);
-        bigWaveDrawable.update(bigWaveDrawable.amplitude * 1.5f, 1.04f);
+        bigWaveDrawable.update(bigWaveDrawable.amplitude * 1.5f, 1.1f);
         tinyWaveDrawable.updateAmplitude(dt);
-        tinyWaveDrawable.update(tinyWaveDrawable.amplitude * 1.5f, 1.05f);
+        tinyWaveDrawable.update(tinyWaveDrawable.amplitude * 1.5f, 1.1f);
 
         lastUpdateTime = System.currentTimeMillis();
 
@@ -114,7 +114,7 @@ public class VoIPWavesView extends View {
 
         float enter = CubicBezierInterpolator.EASE_OUT.getInterpolation(wavesEnterAnimation);
         canvas.save();
-        float s = scale * enter * (BlobDrawable.SCALE_BIG_MIN + bigWaveDrawable.amplitude);
+        float s = scale * enter * (BlobDrawable.SCALE_BIG + bigWaveDrawable.amplitude);
         canvas.scale(s, s, cx, cy);
         bigWaveDrawable.draw(cx, cy, canvas, bigWaveDrawable.paint);
         canvas.restore();

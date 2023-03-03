@@ -45,6 +45,8 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.VoIPFragment;
 
+import java.util.Random;
+
 // TODO REMOVE
 public class VoipTestFragment extends BaseFragment {
 
@@ -100,15 +102,11 @@ public class VoipTestFragment extends BaseFragment {
 
 
         });
-        content.addView(rateButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 45, Gravity.CENTER, 16, 0, 16, 80));
+
+        content.addView(rateButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 45, Gravity.CENTER_HORIZONTAL, 16, 10, 16, 10));
 
 
-        content.setOnClickListener(v -> {
-            state = ++state % 3;
-            backgroundView.setState(state, null);
 
-
-        });
 
         buttonsLayout = new VoIPButtonsLayout(context);
         for (int i = 0; i < 4; i++) {
@@ -144,6 +142,28 @@ public class VoipTestFragment extends BaseFragment {
         //acceptDeclineView.setRetryMod(true);
         content.addView(acceptDeclineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 186, Gravity.BOTTOM));
         showAcceptDeclineView(true, true, false);
+        content.setClipChildren(false);
+        content.setClipToPadding(false);
+        VoIPWavesView voIPWavesView = new VoIPWavesView(context, 128);
+        content.addView(voIPWavesView, LayoutHelper.createFrame(128, 128, Gravity.CENTER_HORIZONTAL, 0, 150, 0, 0));
+        voIPWavesView.setAmplitude(0);
+
+        content.setOnClickListener(v -> {
+            state = ++state % 3;
+            backgroundView.setState(state, null);
+
+
+        });
+
+        Random random = new Random();
+
+        voIPWavesView.setOnClickListener((v) -> {
+            voIPWavesView.setAmplitude(random.nextFloat() * 600);
+        });
+
+        VoIPStatusTextView voIPStatusTextView = new VoIPStatusTextView(context);
+        content.addView(voIPStatusTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        voIPStatusTextView.setText("Some status", true, true);
 
 
         return fragmentView;
