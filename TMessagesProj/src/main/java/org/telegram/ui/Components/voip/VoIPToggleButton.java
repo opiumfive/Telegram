@@ -33,7 +33,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 
-public class VoIPToggleButton extends FrameLayout {
+public class VoIPToggleButton extends FrameLayout implements Colorable {
 
     Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean drawBackground = true;
@@ -126,6 +126,12 @@ public class VoIPToggleButton extends FrameLayout {
         drawBackground = value;
     }
 
+
+    public int getIconColor(int color) {
+        curColorD = dColor != 0 && supportsVideo && !isVideo ? dColor : color;
+        return curColorD;
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -139,7 +145,14 @@ public class VoIPToggleButton extends FrameLayout {
         float cy = AndroidUtilities.dp(radius) / 2f;
         float radius = AndroidUtilities.dp(this.radius) / 2f;
         if (drawBackground) {
-            canvas.drawCircle(cx, cy, AndroidUtilities.dp(this.radius) / 2f, circlePaint);
+            circlePaint.setColor(backgroundColor);
+            if (animateBackground && replaceProgress != 0) {
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(this.radius) / 2f, circlePaint);
+                circlePaint.setColor(animateToBackgroundColor);
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(this.radius) / 2f * replaceProgress, circlePaint);
+            } else {
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(this.radius) / 2f, circlePaint);
+            }
         }
         if (rippleDrawable == null) {
             rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(this.radius), 0, Color.BLACK);
@@ -152,14 +165,15 @@ public class VoIPToggleButton extends FrameLayout {
             if (drawCross || crossProgress != 0) {
                 if (iconChangeColor) {
                     int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
-                    icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+
+                    icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(color), PorterDuff.Mode.MULTIPLY));
                     crossPaint.setColor(color);
                 }
                 icon[0].setAlpha(255);
 
                 if (replaceProgress != 0 && iconChangeColor) {
                     int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
-                    icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                    icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(color), PorterDuff.Mode.MULTIPLY));
                     crossPaint.setColor(color);
                 }
                 icon[0].setAlpha(255);
@@ -242,12 +256,12 @@ public class VoIPToggleButton extends FrameLayout {
         invalidate();
     }
 
-    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
-        setData(iconRes, animatedDrawable, startFrame, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
+    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, String text, boolean cross, boolean animated, boolean supportsVideo, boolean isVideo) {
+        setData(iconRes, animatedDrawable, startFrame, iconColor, backgroundColor, 1.0f, true, text, cross, animated, supportsVideo, isVideo);
     }
 
     public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
-        setData(iconRes, false, 0, iconColor, backgroundColor, selectorAlpha, recreateRipple, text, cross, animated);
+        setData(iconRes, false, 0, iconColor, backgroundColor, selectorAlpha, recreateRipple, text, cross, animated, false, false);
     }
 
     public void setEnabled(boolean enabled, boolean animated) {
@@ -264,7 +278,14 @@ public class VoIPToggleButton extends FrameLayout {
         return currentIconRes;
     }
 
-    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
+    boolean supportsVideo = false;
+    int iconColorD = 0;
+    int curColorD = 0;
+
+    public void setData(int iconRes, boolean animatedDrawable, int startFrame, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated, boolean supportsVideo, boolean isVideo) {
+        this.supportsVideo = supportsVideo;
+        iconColorD = iconColor;
+        this.isVideo = isVideo;
         this.animatedDrawable = animatedDrawable;
         if (getVisibility() != View.VISIBLE) {
             animated = false;
@@ -274,7 +295,15 @@ public class VoIPToggleButton extends FrameLayout {
         if (animatedDrawable) {
 
             if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text)) && cross == this.drawCross) {
-                return;
+
+                if (iconColorD != getIconColor(curColorD)) {
+                    if (icon[0] != null) icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+                    if (icon[1] != null) icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+                } else {
+                    return;
+                }
+
+                //return;
             }
 
             if (rippleDrawable == null || recreateRipple) {
@@ -308,9 +337,9 @@ public class VoIPToggleButton extends FrameLayout {
                     dr.setMasterParent(this);
                     dr.setCurrentFrame(startFrame);
                     icon[0] = dr;
-                    icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                    icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColor), PorterDuff.Mode.MULTIPLY));
                 }
-                crossPaint.setColor(iconColor);
+                crossPaint.setColor(getIconColor(iconColor));
                 if (!checkable) {
                     this.backgroundColor = backgroundColor;
                 }
@@ -326,7 +355,7 @@ public class VoIPToggleButton extends FrameLayout {
                     dr.setCurrentFrame(startFrame);
                     dr.start();
                     icon[1] = dr;
-                    icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                    icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColor), PorterDuff.Mode.MULTIPLY));
                 }
                 if (!checkable) {
                     this.animateToBackgroundColor = backgroundColor;
@@ -419,7 +448,7 @@ public class VoIPToggleButton extends FrameLayout {
             if (!animated) {
                 if (iconRes != 0) {
                     icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
-                    icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                    icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColor), PorterDuff.Mode.MULTIPLY));
                 }
                 crossPaint.setColor(iconColor);
                 if (!checkable) {
@@ -433,7 +462,7 @@ public class VoIPToggleButton extends FrameLayout {
             } else {
                 if (!iconChangeColor && iconRes != 0) {
                     icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
-                    icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                    icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColor), PorterDuff.Mode.MULTIPLY));
                 }
                 if (!checkable) {
                     this.animateToBackgroundColor = backgroundColor;
@@ -493,6 +522,24 @@ public class VoIPToggleButton extends FrameLayout {
             }
         }
     }
+
+    private int dColor;
+
+    @Override
+    public void setDColor(int color) {
+        if (backgroundColor == Color.WHITE) {
+            dColor = color;
+            if (icon[0] != null) icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+            if (icon[1] != null) icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+            invalidate();
+        } else {
+            dColor = 0;
+            if (icon[0] != null) icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+            if (icon[1] != null) icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+        }
+    }
+
+    boolean isVideo = false;
 
     public void setCrossOffset(float crossOffset) {
         this.crossOffset = crossOffset;

@@ -3,6 +3,7 @@ package org.telegram.ui.Components.voip;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.View;
 
 import androidx.annotation.Keep;
@@ -28,6 +29,7 @@ public class VoIPWavesView extends View {
     private float drawingCx, drawingCy;
     private int size;
     private int maxSize;
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public VoIPWavesView(Context context, int minSizeDp) {
         this(context, minSizeDp, (int) (minSizeDp * 1.15f), 4, 4, true);
@@ -54,7 +56,8 @@ public class VoIPWavesView extends View {
         updateColors();
     }
 
-    public void setAmplitude(double value) {
+    public void setAmplitude(double value, boolean force) {
+        if (isPaused && !force) return;
         bigWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value * 0.60) / WaveDrawable.MAX_AMPLITUDE), true);
         tinyWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE), false);
 
@@ -78,11 +81,26 @@ public class VoIPWavesView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+
+
+
         int cx = getMeasuredWidth() / 2;
         int cy = getMeasuredHeight() / 2;
 
         drawingCx = cx;
         drawingCy = cy;
+
+        if (isPaused && animateToAmplitude == amplitude) {
+            int color = Color.WHITE;
+            int colorWave1 = ColorUtils.setAlphaComponent(color, 36);
+            int colorWave2 = ColorUtils.setAlphaComponent(color, 20);
+            paint.setColor(colorWave1);
+            canvas.drawCircle(drawingCx, drawingCy, AndroidUtilities.dp(72), paint);
+
+            paint.setColor(colorWave2);
+            canvas.drawCircle(drawingCx, drawingCy, AndroidUtilities.dp(82), paint);
+            return;
+        }
 
         long dt = System.currentTimeMillis() - lastUpdateTime;
         if (animateToAmplitude != amplitude) {
@@ -132,6 +150,7 @@ public class VoIPWavesView extends View {
         int colorWave1 = ColorUtils.setAlphaComponent(color, 36);
         int colorWave2 = ColorUtils.setAlphaComponent(color, 20);
 
+
         bigWaveDrawable.paint.setColor(colorWave1);
         tinyWaveDrawable.paint.setColor(colorWave2);
 
@@ -148,11 +167,24 @@ public class VoIPWavesView extends View {
         showWaves = b;
     }
 
+    boolean isPaused = false;
+    boolean isImmediate = false;
+
     public void pause(boolean immediate) {
-        //TODO
+        isPaused = true;
+        isImmediate = immediate;
+        if (immediate) {
+            animateToAmplitude = 0;
+            amplitude = 0;
+            animateAmplitudeDiff = 0;
+        }
+        setAmplitude(0, true);
+
     }
 
     public void resume() {
-        //TODO
+        isPaused = false;
+        isImmediate = false;
+        setAmplitude(100, false);
     }
 }

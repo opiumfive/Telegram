@@ -303,7 +303,7 @@ public class VoIPStatusTextView extends FrameLayout {
             if (!animating) return;
 
             float fromX = getMeasuredWidth() - AndroidUtilities.dp(24) + AndroidUtilities.dp(4);
-            float y = getMeasuredHeight() / 2f;
+            float y = getMeasuredHeight() / 2f + AndroidUtilities.dp(1);
             float diff = 1f;
 
             if (p1 == null) {

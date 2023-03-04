@@ -4013,6 +4013,7 @@
     <string name="CallEncryptionKeyHint">Encryption key of this call</string>
     <string name="CallHideEmoji">Hide emoji</string>
     <string name="CallYourMicroOff">Your microphone is turned off</string>
+    <string name="CallBtConnected">Bluetooth device connected</string>
     <string name="CallWeakSignal">Weak network signal</string>
     <string name="CallRateCallTitle">Rate this call</string>
     <string name="CallRateCallSubtitle">Please rate the quality of this call.</string>

@@ -225,6 +225,11 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
     private VoIPWavesView wavesView;
     private VoIPSmoothMotionView backgroundImage;
     private OrientationHelper orientationHelper;
+    boolean endedStateTriggered = false;
+    boolean established = false;
+    boolean transitionedFromAccept = false;
+    boolean shownAcceptView = false;
+    boolean isIncomingCall = false;
 
     ValueAnimator uiVisibilityAnimator;
     ValueAnimator.AnimatorUpdateListener statusbarAnimatorListener = valueAnimator -> {
@@ -250,17 +255,45 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             updateViewState();
         }
     };
-    boolean pauseMagicAnimationsRunnableWaiting;
-    Runnable pauseMagicAnimationsRunnable = () -> {
-        hideUiRunnableWaiting = false;
 
-        lastContentTapTime = System.currentTimeMillis();
+    Runnable pauseMagicAnimationsRunnable = () -> {
+        if (!established) {
+            return;
+        }
         if (backgroundImage != null) backgroundImage.pause(false);
         if (wavesView != null) wavesView.pause(false);
-
-
     };
 
+    @Override
+    public void onProximity(boolean on) {
+        if (!established) {
+            return;
+        }
+        if (on) {
+            if (backgroundImage != null) backgroundImage.pause(true);
+            if (wavesView != null) wavesView.pause(true);
+        } else {
+            if (backgroundImage != null) backgroundImage.resume();
+            if (wavesView != null) wavesView.resume();
+            AndroidUtilities.cancelRunOnUIThread(pauseMagicAnimationsRunnable);
+            AndroidUtilities.runOnUIThread(pauseMagicAnimationsRunnable, 10000);
+        }
+    }
+
+    boolean shownBtConnected = false;
+    boolean needShowBtConnectedHint = false;
+
+    @Override
+    public void onBtConnected() {
+        if (shownBtConnected) return;
+        shownBtConnected = true;
+        needShowBtConnectedHint = true;
+        updateViewState();
+        AndroidUtilities.runOnUIThread(() -> {
+            needShowBtConnectedHint = false;
+            updateViewState();
+        }, 2000);
+    }
 
     private final Random random = new Random();
     private boolean magicInitialAnimations = false;
@@ -507,8 +540,8 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         ((FrameLayout.LayoutParams) emojiLayout.getLayoutParams()).topMargin = AndroidUtilities.dp(17) + lastInsets.getSystemWindowInsetTop();
         ((FrameLayout.LayoutParams) callingUserPhotoViewMini.getLayoutParams()).topMargin = AndroidUtilities.dp(110) + lastInsets.getSystemWindowInsetTop();
         ((FrameLayout.LayoutParams) wavesView.getLayoutParams()).topMargin = AndroidUtilities.dp(110) + lastInsets.getSystemWindowInsetTop();
-        ((FrameLayout.LayoutParams) currentUserCameraFloatingLayout.getLayoutParams()).bottomMargin = AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom();
-        ((FrameLayout.LayoutParams) callingUserMiniFloatingLayout.getLayoutParams()).bottomMargin = AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom();
+        ((FrameLayout.LayoutParams) currentUserCameraFloatingLayout.getLayoutParams()).bottomMargin = lastInsets.getSystemWindowInsetBottom();
+        ((FrameLayout.LayoutParams) callingUserMiniFloatingLayout.getLayoutParams()).bottomMargin = lastInsets.getSystemWindowInsetBottom();
         ((FrameLayout.LayoutParams) callingUserTextureView.getLayoutParams()).bottomMargin = lastInsets.getSystemWindowInsetBottom();
         ((FrameLayout.LayoutParams) notificationsLayout.getLayoutParams()).bottomMargin = AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom();
         ((FrameLayout.LayoutParams) rateButtonView.getLayoutParams()).bottomMargin = lastInsets.getSystemWindowInsetBottom() + AndroidUtilities.dp(60);
@@ -539,7 +572,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.voipServiceCreated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeInCallActivity);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
 
         orientationHelper = new OrientationHelper() {
             @Override
@@ -548,13 +581,18 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     if (!callingUserIsVideo && !currentUserIsVideo) {
                         orientation = 0;
                     }
-
+                    if (-orientation != curStatusRotation) {
+                        curStatusRotation = -orientation;
+                        statusLayout.animate().rotation(curStatusRotation).start();
+                    }
                     buttonsLayout.setRotation(-orientation);
                 }
             }
         };
         orientationHelper.start();
     }
+
+    int curStatusRotation = 0;
 
     private void destroy() {
         final VoIPService service = VoIPService.getSharedInstance();
@@ -564,7 +602,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.voipServiceCreated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeInCallActivity);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
 
         AndroidUtilities.cancelRunOnUIThread(initialMagicAvatarAnimationRunnable);
         AndroidUtilities.cancelRunOnUIThread(pauseMagicAnimationsRunnable);
@@ -598,12 +636,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             updateKeyView(true);
         } else if (id == NotificationCenter.closeInCallActivity) {
             windowView.finish();
-        } else if (id == NotificationCenter.webRtcMicAmplitudeEvent) {
+        } else if (id == NotificationCenter.webRtcSpeakerAmplitudeEvent) {
             float amplitude = (float) args[0];
             amplitude = Math.min(1.0f, amplitude);
             amplitude = Math.max(0f, amplitude);
             if (wavesView != null) {
-                wavesView.setAmplitude(amplitude * 500);
+                wavesView.setAmplitude(amplitude * 500, false);
             }
         }
     }
@@ -625,6 +663,10 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     @Override
     public void onAudioSettingsChanged() {
+        VoIPService service = VoIPService.getSharedInstance();
+        if (service != null && service.isBluetoothOn() && currentState != VoIPService.STATE_BUSY && currentState != VoIPService.STATE_ENDED && currentState != VoIPService.STATE_FAILED) {
+            onBtConnected();
+        }
         updateButtons(true, false);
     }
 
@@ -678,6 +720,17 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             float pressedY;
             boolean check;
             long pressedTime;
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (established) {
+                    AndroidUtilities.cancelRunOnUIThread(pauseMagicAnimationsRunnable);
+                    AndroidUtilities.runOnUIThread(pauseMagicAnimationsRunnable, 10000);
+                }
+                if (backgroundImage != null) backgroundImage.resume();
+                if (wavesView != null) wavesView.resume();
+                return super.dispatchTouchEvent(ev);
+            }
 
             @Override
             public boolean onTouchEvent(MotionEvent ev) {
@@ -1053,7 +1106,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         final AvatarDrawable avatarDrawable = new AvatarDrawable(callingUser);
 
         wavesView = new VoIPWavesView(context, avatarSizeDp);
-        wavesView.setAmplitude(0);
+        wavesView.setAmplitude(0, true);
 
         backgroundImage = new VoIPSmoothMotionView(context);
         backgroundImage.runCycleAnimation();
@@ -1098,6 +1151,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         buttonsLayout = new VoIPButtonsLayout(context);
         for (int i = 0; i < 4; i++) {
             bottomButtons[i] = new VoIPToggleButton(context);
+            backgroundImage.registerColorableDark(bottomButtons[i]);
             buttonsLayout.addView(bottomButtons[i]);
         }
         acceptDeclineView = new AcceptDeclineView(context);
@@ -1643,12 +1697,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
     }
 
-    boolean endedStateTriggered = false;
-    boolean established = false;
-    boolean transitionedFromAccept = false;
-    boolean shownAcceptView = false;
-    boolean isIncomingCall = false;
-
     private void updateViewState() {
         if (isFinished || switchingToPip || endedStateTriggered) {
             return;
@@ -1712,6 +1760,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                 updateKeyView(animated);
                 if (currentState == VoIPService.STATE_ESTABLISHED) {
                     established = true;
+
+                    AndroidUtilities.cancelRunOnUIThread(pauseMagicAnimationsRunnable);
+                    AndroidUtilities.runOnUIThread(pauseMagicAnimationsRunnable, 10000);
 
                     if (!isIncomingCall) {
                         PointF center = new PointF();
@@ -1875,8 +1926,6 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             AndroidUtilities.cancelRunOnUIThread(hideUIRunnable);
             hideUiRunnableWaiting = false;
         }
-        AndroidUtilities.cancelRunOnUIThread(pauseMagicAnimationsRunnable);
-        AndroidUtilities.runOnUIThread(pauseMagicAnimationsRunnable, 3000);
         if (!uiVisible) {
             statusLayoutOffset -= AndroidUtilities.dp(50);
         }
@@ -1961,7 +2010,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             }
             if ((currentUserIsVideo || callingUserIsVideo) && (currentState == VoIPService.STATE_ESTABLISHED || currentState == VoIPService.STATE_RECONNECTING) && service.getCallDuration() > 500) {
                 if (service.getRemoteAudioState() == Instance.AUDIO_STATE_MUTED) {
-                    notificationsLayout.addNotification(R.drawable.calls_mute_mini, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
+                    notificationsLayout.addNotification(0, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
                 } else {
                     notificationsLayout.removeNotification("muted");
                 }
@@ -1971,13 +2020,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     notificationsLayout.removeNotification("you_muted");
                 }
                 if (service.getRemoteVideoState() == Instance.VIDEO_STATE_INACTIVE) {
-                    notificationsLayout.addNotification(R.drawable.calls_camera_mini, LocaleController.formatString("VoipUserCameraIsOff", R.string.VoipUserCameraIsOff, UserObject.getFirstName(callingUser)), "video", animated);
+                    notificationsLayout.addNotification(0, LocaleController.formatString("VoipUserCameraIsOff", R.string.VoipUserCameraIsOff, UserObject.getFirstName(callingUser)), "video", animated);
                 } else {
                     notificationsLayout.removeNotification("video");
                 }
             } else {
                 if (service.getRemoteAudioState() == Instance.AUDIO_STATE_MUTED) {
-                    notificationsLayout.addNotification(R.drawable.calls_mute_mini, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
+                    notificationsLayout.addNotification(0, LocaleController.formatString("VoipUserMicrophoneIsOff", R.string.VoipUserMicrophoneIsOff, UserObject.getFirstName(callingUser)), "muted", animated);
                 } else {
                     notificationsLayout.removeNotification("muted");
                 }
@@ -1987,6 +2036,12 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     notificationsLayout.removeNotification("you_muted");
                 }
                 notificationsLayout.removeNotification("video");
+            }
+
+            if (needShowBtConnectedHint) {
+                notificationsLayout.addNotification(0, LocaleController.getString("CallBtConnected", R.string.CallBtConnected), "bt_connected", animated);
+            } else {
+                notificationsLayout.removeNotification("bt_connected");
             }
 
             if (notificationsLayout.getChildCount() == 0 && callingUserIsVideo && service.privateCall != null && !service.privateCall.video && !service.sharedUIParams.tapToVideoTooltipWasShowed) {
@@ -2557,7 +2612,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             setVideoAction(bottomButtons[1], service, animated);
             setMicrohoneAction(bottomButtons[2], service, animated);
 
-            bottomButtons[3].setData(R.raw.voip_call_decline, true, 0, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), false, animated);
+            bottomButtons[3].setData(R.raw.voip_call_decline, true, 0, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButtons[3].setOnClickListener(view -> {
                 if (VoIPService.getSharedInstance() != null) {
                     VoIPService.getSharedInstance().hangUp();
@@ -2577,9 +2632,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (service.isMicMute()) {
-            bottomButton.setData(R.raw.voip_call_mute, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), false, animated);
+            bottomButton.setData(R.raw.voip_call_mute, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), false, animated, true, currentUserIsVideo || callingUserIsVideo);
         } else {
-            bottomButton.setData(R.raw.voip_call_unmute, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated);
+            bottomButton.setData(R.raw.voip_call_unmute, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated, true, currentUserIsVideo || callingUserIsVideo);
         }
         currentUserCameraFloatingLayout.setMuted(service.isMicMute(), animated);
         bottomButton.setOnClickListener(view -> {
@@ -2611,9 +2666,9 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         }
         if (isVideoAvailable) {
             if (currentUserIsVideo) {
-                bottomButton.setData(service.isScreencast() ? R.raw.voip_call_sharescreen : R.raw.voip_video_stop, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipStopVideo", R.string.VoipStopVideo), false, animated);
+                bottomButton.setData(service.isScreencast() ? R.raw.voip_call_sharescreen : R.raw.voip_video_stop, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipStopVideo", R.string.VoipStopVideo), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             } else {
-                bottomButton.setData(R.raw.voip_video_start, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipStartVideo", R.string.VoipStartVideo), false, animated);
+                bottomButton.setData(R.raw.voip_video_start, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipStartVideo", R.string.VoipStartVideo), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             }
             bottomButton.setCrossOffset(-AndroidUtilities.dpf2(3.5f));
             bottomButton.setOnClickListener(view -> {
@@ -2636,7 +2691,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
             });
             bottomButton.setEnabled(true);
         } else {
-            bottomButton.setData(R.drawable.calls_video, false, 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), "Video", false, animated);
+            bottomButton.setData(R.drawable.calls_video, false, 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), "Video", false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButton.setOnClickListener(null);
             bottomButton.setEnabled(false);
         }
@@ -2665,13 +2720,13 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
         boolean wasBt = bottomButton.getCurrentIconRes() == R.raw.voip_speaker_to_bt;
         boolean wasSp = bottomButton.getCurrentIconRes() == R.raw.voip_bt_to_speaker || bottomButton.getCurrentIconRes() == R.raw.voip_bt_to_speaker2;
         if (service.isBluetoothOn()) {
-            bottomButton.setData(R.raw.voip_speaker_to_bt, true, wasSp ? 0 : 17, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth), false, animated);
+            bottomButton.setData(R.raw.voip_speaker_to_bt, true, wasSp ? 0 : 17, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButton.setChecked(false, animated);
         } else if (service.isSpeakerphoneOn()) {
-            bottomButton.setData(R.raw.voip_bt_to_speaker, true, wasBt ? 0 : 10, Color.BLACK, Color.WHITE, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
+            bottomButton.setData(R.raw.voip_bt_to_speaker, true, wasBt ? 0 : 10, Color.BLACK, Color.WHITE, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButton.setChecked(true, animated);
         } else {
-            bottomButton.setData(R.raw.voip_bt_to_speaker2, true, wasBt ? 0 : 10, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
+            bottomButton.setData(R.raw.voip_bt_to_speaker2, true, wasBt ? 0 : 10, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButton.setChecked(false, animated);
         }
         bottomButton.setCheckableForAccessibility(true);
@@ -2685,15 +2740,15 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
 
     private void setFrontalCameraAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         if (!currentUserIsVideo) {
-            bottomButton.setData(R.drawable.calls_flip,  false, 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
+            bottomButton.setData(R.drawable.calls_flip,  false, 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             bottomButton.setOnClickListener(null);
             bottomButton.setEnabled(false);
         } else {
             bottomButton.setEnabled(true);
             if (!service.isFrontFaceCamera()) {
-                bottomButton.setData(R.raw.voip_camera_flip, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
+                bottomButton.setData(R.raw.voip_camera_flip, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             } else {
-                bottomButton.setData(R.raw.voip_camera_flip2, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
+                bottomButton.setData(R.raw.voip_camera_flip2, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated, true, currentUserIsVideo || callingUserIsVideo);
             }
 
             bottomButton.setOnClickListener(view -> {

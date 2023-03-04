@@ -2,6 +2,8 @@ package org.telegram.ui.Components.voip;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -15,12 +17,14 @@ import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.IntDef;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.VoIPFragment;
 
 import java.lang.annotation.Retention;
+import java.util.HashSet;
 
 public class VoIPSmoothMotionView extends View {
 
@@ -48,15 +52,58 @@ public class VoIPSmoothMotionView extends View {
     private float addRad = 3;
     boolean circular = false;
 
+    private HashSet<Colorable> colorableViews = new HashSet<>();
+
+    boolean isPaused = false;
+    boolean isImmediate = false;
+    float lastProgress = 0f;
+
+    public void registerColorableDark(Colorable child) {
+        colorableViews.add(child);
+    }
+
+    public void unregisterColorable(Colorable child) {
+        colorableViews.remove(child);
+    }
+
     public void pause(boolean immediate) {
-        //TODO
+        isPaused = true;
+        isImmediate = immediate;
+
+        lastProgress = getCurrentBackground().getPosAnimationProgress();
+
+        getCurrentBackground().setIndeterminateAnimation(false);
+        getNextBackground().setIndeterminateAnimation(false);
+        getNextBackground().setParentView(null);
+        getCurrentBackground().setParentView(null);
+        stopCycleAnimation();
     }
 
     public void resume() {
-        //TODO
+        isPaused = false;
+        isImmediate = false;
+        getCurrentBackground().setIndeterminateAnimation(true);
+        getNextBackground().setIndeterminateAnimation(true);
+        getCurrentBackground().setPosAnimationProgress(lastProgress);
+        getNextBackground().setPosAnimationProgress(lastProgress);
+        getNextBackground().setParentView(this);
+        getCurrentBackground().setParentView(this);
+        runCycleAnimation();
     }
 
     public void setState(@State int newState, PointF circular) {
+        if (newState == state && state == ESTABLISHED) return;
+        if (valueAnimator != null) {
+            valueAnimator.cancel();
+            valueAnimator = null;
+        }
+        if (valueAnimator2 != null) {
+            valueAnimator2.cancel();
+            valueAnimator2 = null;
+        }
+        progress = 1f;
+        progress2 = 0f;
+
         state = newState;
 
         switch (state) {
@@ -87,14 +134,26 @@ public class VoIPSmoothMotionView extends View {
                     VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 2),
                     VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 3),
                     0, false);
+            if (current1) {
+                cols2[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+                cols2[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 1);
+                cols2[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 2);
+                cols2[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 3);
+            } else {
+                cols[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+                cols[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 1);
+                cols[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 2);
+                cols[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 3);
+            }
             mTo.setBackgroundAlpha(1f);
             getCurrentBackground().setBackgroundAlpha(1f);
         } else {
-
             phase = 5;
             fastTransition = true;
         }
     }
+
+    float prog = 0f;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -106,6 +165,26 @@ public class VoIPSmoothMotionView extends View {
 
         MotionBackgroundDrawable cur = getCurrentBackground();
         MotionBackgroundDrawable next = getNextBackground();
+
+        int col1 = prog < 0.25f ? ColorUtils.blendARGB(cols[0], cols[1], prog * 4) :
+                prog < 0.5f ? ColorUtils.blendARGB(cols[1], cols[2], (prog - 0.25f) * 4) :
+                        prog < 0.75f ? ColorUtils.blendARGB(cols[2], cols[3], (prog - 0.5f) * 4) :
+                                ColorUtils.blendARGB(cols[3], cols[0], (prog - 0.75f) * 4);
+
+        int col2 = prog < 0.25f ? ColorUtils.blendARGB(cols2[0], cols2[1], prog * 4) :
+                prog < 0.5f ? ColorUtils.blendARGB(cols2[1], cols2[2], (prog - 0.25f) * 4) :
+                        prog < 0.75f ? ColorUtils.blendARGB(cols2[2], cols2[3], (prog - 0.5f) * 4) :
+                                ColorUtils.blendARGB(cols2[3], cols2[0], (prog - 0.75f) * 4);
+
+        /*if (!current1) {
+            col1 = ColorUtils.setAlphaComponent(col1, (int) (cur.getBackgroundAlpha() * 255));
+            col2 = ColorUtils.setAlphaComponent(col2, (int) (next.getBackgroundAlpha() * 255));
+        } else {
+            col2 = ColorUtils.setAlphaComponent(col2, (int) (cur.getBackgroundAlpha() * 255));
+            col1 = ColorUtils.setAlphaComponent(col1, (int) (next.getBackgroundAlpha() * 255));
+        }*/
+
+        prog = cur.getPosAnimationProgress();
 
        // if (cur.getBackgroundAlpha() != 0f) {
             cur.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
@@ -121,9 +200,10 @@ public class VoIPSmoothMotionView extends View {
 
                 cur.setBackgroundAlpha(0f);
                 phase = 0;
+                palette = VoIPFragment.Gradients.GREEN;
                 current1 = !current1;
 
-                AndroidUtilities.runOnUIThread(cycleBackgroundAnimation, 1000);
+                AndroidUtilities.runOnUIThread(cycleBackgroundAnimation, 2000);
             }
         }
 
@@ -143,6 +223,17 @@ public class VoIPSmoothMotionView extends View {
         if (circular) canvas.restore();
 
         canvas.restore();
+        int col = 0;
+
+        if (current1) {
+            col = progress >= 0.98f ? col1 : ColorUtils.blendARGB(col1, col2, progress);
+        } else {
+            col = progress2 <= 0.02f ? col2 : ColorUtils.blendARGB(col2, col1, progress2);
+        }
+
+        for (Colorable c: colorableViews) {
+            c.setDColor(col);
+        }
 
         if (cycleAnimationInProgress) {
             invalidate();
@@ -159,6 +250,7 @@ public class VoIPSmoothMotionView extends View {
                 VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 2),
                 VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 3),
                 0, true);
+
         backgroundImage.setIndeterminateAnimation(true);
         backgroundImage2 = new MotionBackgroundDrawable();
         backgroundImage2.setColors(
@@ -167,6 +259,17 @@ public class VoIPSmoothMotionView extends View {
                 VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 2),
                 VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 3),
                 0, false);
+
+        cols[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+
+        cols2[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols2[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols2[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+        cols2[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+
         backgroundImage2.setIndeterminateAnimation(true);
         getNextBackground().setPosAnimationProgress(0f);
         getCurrentBackground().setPosAnimationProgress(0f);
@@ -200,6 +303,18 @@ public class VoIPSmoothMotionView extends View {
                             VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.MAIN, 3),
                             0, false);
 
+                    if (current1) {
+                        cols2[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+                        cols2[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 1);
+                        cols2[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 2);
+                        cols2[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 3);
+                    } else {
+                        cols[0] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 0);
+                        cols[1] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 1);
+                        cols[2] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 2);
+                        cols[3] = VoIPFragment.Gradients.color(palette, VoIPFragment.Gradients.DARK, 3);
+                    }
+
                     if (valueAnimator != null) {
                         valueAnimator.cancel();
                         valueAnimator = null;
@@ -218,10 +333,17 @@ public class VoIPSmoothMotionView extends View {
                             //} else {
                             //    getCurrentBackground().setBackgroundAlpha(val);
                             //}
+                            progress = val;
                             if (!circular) {
                                 getCurrentBackground().setBackgroundAlpha(val);
                             }
                             //getNextBackground().setBackgroundAlpha(val);
+                        });
+                        valueAnimator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                progress2 = 0f;
+                            }
                         });
                         valueAnimator.setInterpolator(new AccelerateInterpolator());
 
@@ -231,8 +353,16 @@ public class VoIPSmoothMotionView extends View {
                         valueAnimator2.addUpdateListener(animation -> {
                             float val = (float) animation.getAnimatedValue();
                             //getCurrentBackground().setBackgroundAlpha(1 - val);
+                            progress2 = val;
+
                             if (!circular) {
                                 getNextBackground().setBackgroundAlpha(val);
+                            }
+                        });
+                        valueAnimator2.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                progress2 = 1f;
                             }
                         });
                         valueAnimator2.setInterpolator(new DecelerateInterpolator());
@@ -263,6 +393,9 @@ public class VoIPSmoothMotionView extends View {
         }
     };
 
+    float progress = 1f;
+    float progress2 = 0f;
+
     boolean current1 = true;
 
     private MotionBackgroundDrawable getCurrentBackground() {
@@ -274,6 +407,9 @@ public class VoIPSmoothMotionView extends View {
         if (current1) return backgroundImage2;
         return backgroundImage;
     }
+
+    int[] cols = new int[4];
+    int[] cols2 = new int[4];
 
     private void switchPalette() {
         if (state != WEAK_SIGNAL) {
@@ -293,6 +429,8 @@ public class VoIPSmoothMotionView extends View {
     public void runCycleAnimation() {
         cycleAnimationInProgress = true;
         invalidate();
+        phase = 0;
+        AndroidUtilities.cancelRunOnUIThread(cycleBackgroundAnimation);
         AndroidUtilities.runOnUIThread(cycleBackgroundAnimation, 1000);
     }
 

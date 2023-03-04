@@ -3763,6 +3763,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("proximity " + newIsNear);
 			}
+			for (StateListener l: stateListeners) {
+				l.onProximity(newIsNear);
+			}
 			isProximityNear = newIsNear;
 			try {
 				if (isProximityNear) {
@@ -3802,6 +3805,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("updateBluetoothHeadsetState: " + connected);
+		}
+		if (connected) {
+			for (StateListener l: stateListeners) {
+				l.onBtConnected();
+			}
 		}
 		isBtHeadsetConnected = connected;
 		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -4444,6 +4452,15 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public interface StateListener {
+
+		default void onProximity(boolean isNear) {
+
+		}
+
+		default void onBtConnected() {
+
+		}
+
 		default void onStateChanged(int state) {
 
 		}

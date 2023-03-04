@@ -111,6 +111,7 @@ public class VoipTestFragment extends BaseFragment {
         buttonsLayout = new VoIPButtonsLayout(context);
         for (int i = 0; i < 4; i++) {
             bottomButtons[i] = new VoIPToggleButton(context);
+            backgroundView.registerColorableDark(bottomButtons[i]);
             buttonsLayout.addView(bottomButtons[i]);
         }
 
@@ -146,19 +147,17 @@ public class VoipTestFragment extends BaseFragment {
         content.setClipToPadding(false);
         VoIPWavesView voIPWavesView = new VoIPWavesView(context, 128);
         content.addView(voIPWavesView, LayoutHelper.createFrame(128, 128, Gravity.CENTER_HORIZONTAL, 0, 150, 0, 0));
-        voIPWavesView.setAmplitude(0);
+        voIPWavesView.setAmplitude(0, true);
 
         content.setOnClickListener(v -> {
             state = ++state % 3;
             backgroundView.setState(state, null);
-
-
         });
 
         Random random = new Random();
 
         voIPWavesView.setOnClickListener((v) -> {
-            voIPWavesView.setAmplitude(random.nextFloat() * 600);
+            voIPWavesView.setAmplitude(random.nextFloat() * 600, false);
         });
 
         VoIPStatusTextView voIPStatusTextView = new VoIPStatusTextView(context);
@@ -291,7 +290,7 @@ public class VoipTestFragment extends BaseFragment {
             setVideoAction(bottomButtons[1], null, animated);
             setMicrohoneAction(bottomButtons[2], null, animated);
 
-            bottomButtons[3].setData(R.raw.voip_call_decline, true, 0, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), false, animated);
+            bottomButtons[3].setData(R.raw.voip_call_decline, true, 0, Color.WHITE, 0xFFF01D2C, LocaleController.getString("VoipEndCall", R.string.VoipEndCall), false, animated, true, isVideo);
             bottomButtons[3].setOnClickListener(view -> {
 
             });
@@ -342,13 +341,16 @@ public class VoipTestFragment extends BaseFragment {
         //if (service.isMicMute()) {
         //    bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         //} else {
-            bottomButton.setData(R.raw.voip_call_mute, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated);
+            bottomButton.setData(R.raw.voip_call_mute, true, 0, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipMute", R.string.VoipMute), false, animated, true, isVideo);
         //}
         //currentUserCameraFloatingLayout.setMuted(service.isMicMute(), animated);
         bottomButton.setOnClickListener(view -> {
 
         });
     }
+
+    boolean currentUserIsVideo = false;
+    boolean isVideo = false;
 
     private void setVideoAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
         boolean isVideoAvailable;
@@ -360,17 +362,22 @@ public class VoipTestFragment extends BaseFragment {
         //if (currentUserIsVideo) {
         //    bottomButton.setData(service.isScreencast() ? R.drawable.calls_sharescreen : R.drawable.calls_video, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipStopVideo", R.string.VoipStopVideo), false, animated);
         //} else {
-        bottomButton.setData(R.raw.voip_video_start, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipStartVideo", R.string.VoipStartVideo), true, animated);
+        if (currentUserIsVideo) {
+            bottomButton.setData(R.raw.voip_video_stop, true, 0, Color.WHITE, 0x30ffffff, LocaleController.getString("VoipStopVideo", R.string.VoipStopVideo), false, animated, true, isVideo);
+        } else {
+            bottomButton.setData(R.raw.voip_video_start, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipStartVideo", R.string.VoipStartVideo), false, animated, true, isVideo);
+        }
         //}
         bottomButton.setCrossOffset(-AndroidUtilities.dpf2(3.5f));
         bottomButton.setOnClickListener(view -> {
-
+            currentUserIsVideo = !currentUserIsVideo;
+            setVideoAction(bottomButton, service, true);
         });
         bottomButton.setEnabled(true);
     }
 
     private void setSpeakerPhoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
-        bottomButton.setData(R.raw.voip_speaker_to_bt, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
+        bottomButton.setData(R.raw.voip_speaker_to_bt, true, 0, Color.BLACK, Color.WHITE, LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated, true, isVideo);
         bottomButton.setChecked(true, animated);
 
         bottomButton.setCheckableForAccessibility(true);
