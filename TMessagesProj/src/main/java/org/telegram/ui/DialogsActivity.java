@@ -2538,7 +2538,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         pacmanAnimation = null;
         selectedDialogs.clear();
 
-        presentFragment(new VoipTestFragment());
+        //presentFragment(new VoipTestFragment());
 
         maximumVelocity = ViewConfiguration.get(context).getScaledMaximumFlingVelocity();
 
