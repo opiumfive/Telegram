@@ -46,6 +46,7 @@ public class HintView extends FrameLayout {
     private int shownY;
     private float translationY;
     private float extraTranslationY;
+    private float extraTranslationX;
 
     private int bottomOffset;
     private long showingDuration = 2000;
@@ -128,6 +129,10 @@ public class HintView extends FrameLayout {
     public void setExtraTranslationY(float value) {
         extraTranslationY = value;
         setTranslationY(extraTranslationY + translationY);
+    }
+
+    public void setArrowExtraTranslationX(float value) {
+        extraTranslationX = value;
     }
 
     public float getBaseTranslationY() {
@@ -404,7 +409,7 @@ public class HintView extends FrameLayout {
             }
         }
         setTranslationX(offset);
-        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2;
+        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2 + extraTranslationX;
         if (currentType == 7) {
             arrowX += AndroidUtilities.dp(2);
         }

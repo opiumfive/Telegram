@@ -5,7 +5,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
@@ -22,6 +24,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -30,8 +33,8 @@ import java.util.ArrayList;
 
 public class VoIPStatusTextView extends FrameLayout {
 
-    TextView[] textView = new TextView[2];
-    TextView reconnectTextView;
+    DottedTextView[] textView = new DottedTextView[2];
+    DottedTextView reconnectTextView;
     VoIPTimerView timerView;
 
     CharSequence nextTextToSet;
@@ -42,32 +45,33 @@ public class VoIPStatusTextView extends FrameLayout {
     ValueAnimator animator;
     boolean timerShowing;
 
-    EllipsizeSpanAnimator ellipsizeAnimator;
-
     public VoIPStatusTextView(@NonNull Context context) {
         super(context);
         for (int i = 0; i < 2; i++) {
-            textView[i] = new TextView(context);
+            textView[i] = new DottedTextView(context);
             textView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView[i].setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
             textView[i].setTextColor(Color.WHITE);
+            textView[i].setPadding(0, 0, AndroidUtilities.dp(24), 0);
             textView[i].setGravity(Gravity.CENTER_HORIZONTAL);
             addView(textView[i]);
         }
 
-        reconnectTextView = new TextView(context);
+        setClipChildren(false);
+        setClipToPadding(false);
+
+        reconnectTextView = new DottedTextView(context);
+        reconnectTextView.setAnimating(false);
         reconnectTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        reconnectTextView.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
+        //reconnectTextView.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
+        reconnectTextView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), 0x10000000));
+        reconnectTextView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(2), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
         reconnectTextView.setTextColor(Color.WHITE);
         reconnectTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-        addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 22, 0, 0));
+        addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
-        ellipsizeAnimator = new EllipsizeSpanAnimator(this);
-        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString("VoipReconnecting", R.string.VoipReconnecting));
-        SpannableString ell = new SpannableString("...");
-        ellipsizeAnimator.wrap(ell, 0);
-        ssb.append(ell);
-        reconnectTextView.setText(ssb);
+        reconnectTextView.setText(LocaleController.getString("CallWeakSignal", R.string.CallWeakSignal));
+        //reconnectTextView.setPadding(0, 0, AndroidUtilities.dp(24), 0);
         reconnectTextView.setVisibility(View.GONE);
 
         timerView = new VoIPTimerView(context);
@@ -75,22 +79,19 @@ public class VoIPStatusTextView extends FrameLayout {
 
     }
 
+    public void setCallEnded() {
+        if (timerView != null) timerView.setCallEnded();
+        if (reconnectTextView != null) reconnectTextView.setVisibility(GONE);
+    }
+
     public void setText(String text, boolean ellipsis, boolean animated) {
         CharSequence nextString = text;
-        if (ellipsis) {
-            SpannableStringBuilder ssb = new SpannableStringBuilder(text);
-            ellipsizeAnimator.reset();
-            SpannableString ell = new SpannableString("...");
-            ellipsizeAnimator.wrap(ell, 0);
-            ssb.append(ell);
-            nextString = ssb;
 
-            ellipsizeAnimator.addView(textView[0]);
-            ellipsizeAnimator.addView(textView[1]);
-        } else {
-            ellipsizeAnimator.removeView(textView[0]);
-            ellipsizeAnimator.removeView(textView[1]);
-        }
+        textView[0].setAnimating(false);
+        textView[1].setAnimating(false);
+
+        textView[0].setAnimating(ellipsis);
+        textView[1].setAnimating(ellipsis);
 
         if (TextUtils.isEmpty(textView[0].getText())) {
             animated = false;
@@ -119,7 +120,7 @@ public class VoIPStatusTextView extends FrameLayout {
                 if (!textView[0].getText().equals(nextString)) {
                     textView[1].setText(nextString);
                     replaceViews(textView[0], textView[1], () -> {
-                        TextView v = textView[0];
+                        DottedTextView v = textView[0];
                         textView[0] = textView[1];
                         textView[1] = v;
                     });
@@ -154,8 +155,8 @@ public class VoIPStatusTextView extends FrameLayout {
             replaceViews(textView[0], timerView, null);
         }
 
-        ellipsizeAnimator.removeView(textView[0]);
-        ellipsizeAnimator.removeView(textView[1]);
+        //ellipsizeAnimator.removeView(textView[0]);
+        //ellipsizeAnimator.removeView(textView[1]);
     }
 
 
@@ -206,7 +207,7 @@ public class VoIPStatusTextView extends FrameLayout {
                     } else {
                         textView[1].setText(nextTextToSet);
                         replaceViews(textView[0], textView[1], () -> {
-                            TextView v = textView[0];
+                            DottedTextView v = textView[0];
                             textView[0] = textView[1];
                             textView[1] = v;
                         });
@@ -232,11 +233,13 @@ public class VoIPStatusTextView extends FrameLayout {
                 if (reconnectTextView.getVisibility() != View.VISIBLE) {
                     reconnectTextView.setVisibility(View.VISIBLE);
                     reconnectTextView.setAlpha(0);
+                    reconnectTextView.setScaleX(0.2f);
+                    reconnectTextView.setScaleY(0.2f);
                 }
                 reconnectTextView.animate().setListener(null).cancel();
-                reconnectTextView.animate().alpha(1f).setDuration(150).start();
+                reconnectTextView.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(175).start();
             } else {
-                reconnectTextView.animate().alpha(0).setListener(new AnimatorListenerAdapter() {
+                reconnectTextView.animate().alpha(0).scaleX(0.2f).scaleY(0.2f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         reconnectTextView.setVisibility(View.GONE);
@@ -246,9 +249,9 @@ public class VoIPStatusTextView extends FrameLayout {
         }
 
         if (showReconnecting) {
-            ellipsizeAnimator.addView(reconnectTextView);
+            //ellipsizeAnimator.addView(reconnectTextView);
         } else {
-            ellipsizeAnimator.removeView(reconnectTextView);
+           // ellipsizeAnimator.removeView(reconnectTextView);
         }
     }
 
@@ -256,14 +259,112 @@ public class VoIPStatusTextView extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
-        ellipsizeAnimator.onAttachedToWindow();
+        //ellipsizeAnimator.onAttachedToWindow();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attachedToWindow = false;
-        ellipsizeAnimator.onDetachedFromWindow();
+        //ellipsizeAnimator.onDetachedFromWindow();
+    }
+
+    private class DottedTextView extends TextView {
+
+        private class Point {
+            float x,y,r;
+        }
+
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Point p1;
+        private Point p2;
+        private Point p3;
+        private boolean animating = true;
+
+        public DottedTextView(Context context) {
+            super(context);
+            p.setColor(Color.WHITE);
+        }
+
+        public void setAnimating(boolean a) {
+            if (!a) {
+                p1 = null;
+                p2 = null;
+                p3 = null;
+            }
+            animating = a;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+
+            if (!animating) return;
+
+            float fromX = getMeasuredWidth() - AndroidUtilities.dp(24) + AndroidUtilities.dp(4);
+            float y = getMeasuredHeight() / 2f + AndroidUtilities.dp(1);
+            float diff = 1f;
+
+            if (p1 == null) {
+                p1 = new Point();
+                p1.y = y;
+                p1.x = fromX;
+                p1.r = 1;
+            } else {
+                p1.x += diff;
+                if (p1.x > getMeasuredWidth()) {
+                    p1.x = fromX;
+                }
+                if (p1.x > fromX + AndroidUtilities.dp(10)) {
+                    p1.r = AndroidUtilities.lerp(AndroidUtilities.dpf2(2.5f), 1, 1f - (getMeasuredWidth() - p1.x) / AndroidUtilities.dp(10));
+                } else {
+                    p1.r = AndroidUtilities.lerp(1, AndroidUtilities.dpf2(2.5f), 1f - (getMeasuredWidth() - AndroidUtilities.dp(10)- p1.x) / AndroidUtilities.dp(10));
+                }
+            }
+
+            if (p2 == null) {
+                p2 = new Point();
+                p2.y = y;
+                p2.x = fromX + AndroidUtilities.dp(10);
+                p2.r = 1;
+            } else {
+                p2.x += diff;
+                if (p2.x > getMeasuredWidth()) {
+                    p2.x = fromX;
+                }
+                if (p2.x > fromX + AndroidUtilities.dp(10)) {
+                    p2.r = AndroidUtilities.lerp(AndroidUtilities.dpf2(2.5f), 1, 1f - (getMeasuredWidth() - p2.x) / AndroidUtilities.dp(10));
+                } else {
+                    p2.r = AndroidUtilities.lerp(1, AndroidUtilities.dpf2(2.5f), 1f - (getMeasuredWidth() - AndroidUtilities.dp(10)- p2.x) / AndroidUtilities.dp(10));
+                }
+            }
+
+            if (p3 == null) {
+                p3 = new Point();
+                p3.y = y;
+                p3.x = fromX + AndroidUtilities.dp(20) - 1;
+                p3.r = 1;
+            } else {
+                p3.x += diff;
+                if (p3.x > getMeasuredWidth()) {
+                    p3.x = fromX;
+                }
+                if (p3.x > fromX + AndroidUtilities.dp(10)) {
+                    p3.r = AndroidUtilities.lerp(AndroidUtilities.dpf2(2.5f), 1, 1f - (getMeasuredWidth() - p3.x) / AndroidUtilities.dp(10));
+                } else {
+                    p3.r = AndroidUtilities.lerp(1, AndroidUtilities.dpf2(2.5f), 1f - (getMeasuredWidth() - AndroidUtilities.dp(10)- p3.x) / AndroidUtilities.dp(10));
+                }
+            }
+
+            canvas.drawCircle(p1.x, p1.y, p1.r, p);
+            canvas.drawCircle(p2.x, p2.y, p2.r, p);
+            canvas.drawCircle(p3.x, p3.y, p3.r, p);
+
+            if (animating) {
+                invalidate();
+            }
+        }
     }
 
 }

@@ -56,10 +56,17 @@ public class BlobDrawable {
     private final float N;
     private final float L;
     public float cubicBezierK = 1f;
+    private boolean ignoreLiteMode = false;
 
     private final Matrix m = new Matrix();
 
     public BlobDrawable(int n) {
+        this(n, false);
+    }
+
+    public BlobDrawable(int n, boolean ignoreLiteMode) {
+        // ignoring just to test on my low end device
+        this.ignoreLiteMode = ignoreLiteMode;
         N = n;
         L = (float) ((4.0 / 3.0) * Math.tan(Math.PI / (2 * N)));
         radius = new float[n];
@@ -86,7 +93,7 @@ public class BlobDrawable {
     }
 
     public void update(float amplitude, float speedScale) {
-        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS) && !ignoreLiteMode) {
             return;
         }
         for (int i = 0; i < N; i++) {
@@ -101,10 +108,10 @@ public class BlobDrawable {
     }
 
     public void draw(float cX, float cY, Canvas canvas, Paint paint) {
-        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
+        if (!LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS) && !ignoreLiteMode) {
             return;
         }
-        path.reset();
+        path.rewind();
 
         for (int i = 0; i < N; i++) {
             float progress = this.progress[i];

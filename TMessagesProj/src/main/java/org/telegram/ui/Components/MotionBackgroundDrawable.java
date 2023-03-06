@@ -22,6 +22,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -453,6 +454,10 @@ public class MotionBackgroundDrawable extends Drawable {
     public void setPatternAlpha(float alpha) {
         this.patternAlpha = alpha;
         invalidateParent();
+    }
+
+    public float getBackgroundAlpha() {
+        return this.backgroundAlpha;
     }
 
     public void setBackgroundAlpha(float alpha) {

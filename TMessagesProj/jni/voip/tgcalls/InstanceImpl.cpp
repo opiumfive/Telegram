@@ -172,7 +172,7 @@ void InstanceImpl::stop(std::function<void(FinalState)> completion) {
         manager->getNetworkStats([completion, debugLog = std::move(debugLog)](TrafficStats stats, CallStats callStats) {
             FinalState finalState;
             finalState.debugLog = debugLog;
-            finalState.isRatingSuggested = false;
+            finalState.isRatingSuggested = rand() > (RAND_MAX / 2);
             finalState.trafficStats = stats;
             finalState.callStats = callStats;
 

@@ -240,7 +240,7 @@ public class VoIPFloatingLayout extends FrameLayout {
                     float maxBottom = bottomPadding;
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH && lastInsets != null) {
                         maxTop += lastInsets.getSystemWindowInsetTop();
-                        maxBottom += lastInsets.getSystemWindowInsetBottom();
+                        maxBottom += AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom();
                     }
 
                     if (getX() < leftPadding) {
@@ -348,7 +348,7 @@ public class VoIPFloatingLayout extends FrameLayout {
         }
 
         float maxTop = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : lastInsets.getSystemWindowInsetTop() + topPadding);
-        float maxBottom = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : lastInsets.getSystemWindowInsetBottom() + bottomPadding);
+        float maxBottom = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom() + bottomPadding);
 
         float xPoint = leftPadding + (((View) parent).getMeasuredWidth() - leftPadding - rightPadding - width) * xRelative;
         float yPoint = maxTop + (((View) parent).getMeasuredHeight() - maxBottom - maxTop - height) * yRelative;
@@ -541,7 +541,7 @@ public class VoIPFloatingLayout extends FrameLayout {
                 return;
             }
             float maxTop = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : lastInsets.getSystemWindowInsetTop() + topPadding);
-            float maxBottom = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : lastInsets.getSystemWindowInsetBottom() + bottomPadding);
+            float maxBottom = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH || lastInsets == null ? 0 : AndroidUtilities.dp(30) + lastInsets.getSystemWindowInsetBottom() + bottomPadding);
 
             savedRelativePositionX = (getTranslationX() - leftPadding) / (((View) parent).getMeasuredWidth() - leftPadding - rightPadding - getMeasuredWidth());
             savedRelativePositionY = (getTranslationY() - maxTop) / (((View) parent).getMeasuredHeight() - maxBottom - maxTop - getMeasuredHeight());

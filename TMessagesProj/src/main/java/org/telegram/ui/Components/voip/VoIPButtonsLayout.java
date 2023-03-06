@@ -8,6 +8,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class VoIPButtonsLayout extends FrameLayout {
 
@@ -16,11 +17,12 @@ public class VoIPButtonsLayout extends FrameLayout {
     }
 
     int visibleChildCount;
-    int childWidth;
-    int childPadding;
+    public int childWidth;
+    public int childPadding;
 
     private int childSize = 68;
     private boolean startPadding = true;
+    private int applyRotation = 0;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -56,10 +58,30 @@ public class VoIPButtonsLayout extends FrameLayout {
         setMeasuredDimension(width, h);
     }
 
+    public void setRotation(int rotation) {
+        if (this.applyRotation != rotation) {
+            this.applyRotation = rotation;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                child.animate().rotation(rotation).start();
+            }
+        }
+    }
+
+    public void hide() {
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            child.animate().scaleX(0.3f).scaleY(0.3f).alpha(0f).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250).start();
+        }
+    }
+
+    int startFromInit;
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (startPadding) {
             int startFrom = (int) ((getChildCount() - visibleChildCount) / 2f * (childWidth + childPadding * 2));
+            startFromInit = startFrom;
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
                 if (child.getVisibility() != View.GONE) {
