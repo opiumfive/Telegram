@@ -299,6 +299,7 @@ public class VoIPToggleButton extends FrameLayout implements Colorable {
                 if (iconColorD != getIconColor(curColorD)) {
                     if (icon[0] != null) icon[0].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
                     if (icon[1] != null) icon[1].setColorFilter(new PorterDuffColorFilter(getIconColor(iconColorD), PorterDuff.Mode.MULTIPLY));
+                    return;
                 } else {
                     return;
                 }
