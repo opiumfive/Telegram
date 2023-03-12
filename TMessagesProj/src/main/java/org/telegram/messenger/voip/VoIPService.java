@@ -3090,6 +3090,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 						}
 					});
 				}
+				am.setSpeakerphoneOn(false);
 				am.abandonAudioFocus(this);
 			}
 			try {
