@@ -484,7 +484,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
 
                 scrollView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(maxSize, MeasureSpec.AT_MOST));
-                listView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight(), MeasureSpec.EXACTLY));
+                listView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
                 emptyView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height - scrollView.getMeasuredHeight(), MeasureSpec.EXACTLY));
                 if (floatingButton != null) {
                     int w = AndroidUtilities.dp(Build.VERSION.SDK_INT >= 21 ? 56 : 60);
@@ -495,7 +495,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 scrollView.layout(0, 0, scrollView.getMeasuredWidth(), scrollView.getMeasuredHeight());
-                listView.layout(0, scrollView.getMeasuredHeight(), listView.getMeasuredWidth(), scrollView.getMeasuredHeight() + listView.getMeasuredHeight());
+                listView.setPadding(0, scrollView.getMeasuredHeight(), 0, 0);
+                listView.layout(0, 0, listView.getMeasuredWidth(), listView.getMeasuredHeight());
                 emptyView.layout(0, scrollView.getMeasuredHeight(), emptyView.getMeasuredWidth(), scrollView.getMeasuredHeight() + emptyView.getMeasuredHeight());
 
                 if (floatingButton != null) {
@@ -551,7 +552,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         frameLayout.setClipChildren(false);
         scrollView.setVerticalScrollBarEnabled(false);
         AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_windowBackgroundWhite));
-        frameLayout.addView(scrollView);
 
         spansContainer = new SpansContainer(context);
         scrollView.addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -682,6 +682,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);
         listView.addItemDecoration(itemDecoration = new GroupCreateDividerItemDecoration());
         frameLayout.addView(listView);
+        frameLayout.addView(scrollView);
         listView.setOnItemClickListener((view, position) -> {
             if (position == 0 && adapter.inviteViaLink != 0 && !adapter.searching) {
                 sharedLinkBottomSheet = new PermanentLinkBottomSheet(context, false, this, info, chatId, channelId != 0);
@@ -917,7 +918,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         int measuredH = Math.min(maxSize, measuredContainerHeight);
         int currentH = Math.min(maxSize, containerHeight);
         scrollView.scrollTo(0, Math.max(0, scrollView.getScrollY() - dy));
-        listView.setTranslationY(currentH - measuredH);
+        listView.setPadding(0, currentH, 0, 0);
         fragmentView.invalidate();
     }
 
