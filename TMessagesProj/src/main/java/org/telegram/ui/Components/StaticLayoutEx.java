@@ -16,6 +16,9 @@ import android.text.TextDirectionHeuristic;
 import android.text.TextDirectionHeuristics;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -132,6 +135,10 @@ public class StaticLayoutEx {
         }*/
         try {
             if (maxLines == 1) {
+                int index = TextUtils.indexOf(source, "\n") - 1;
+                if (index > 0) {
+                    source = SpannableStringBuilder.valueOf(source.subSequence(0, index)).append("…");
+                }
                 CharSequence text = TextUtils.ellipsize(source, paint, ellipsisWidth, TextUtils.TruncateAt.END);
                 return new StaticLayout(text, 0, text.length(), paint, outerWidth, align, spacingMult, spacingAdd, includePad);
             } else {
@@ -172,7 +179,7 @@ public class StaticLayoutEx {
                                 .setAlignment(align)
                                 .setLineSpacing(spacingAdd, spacingMult)
                                 .setIncludePad(includePad)
-                                .setEllipsize(TextUtils.TruncateAt.END)
+                                .setEllipsize(stringBuilder.getSpans(0, stringBuilder.length(), AnimatedEmojiSpan.class).length > 0 ? null : ellipsize)
                                 .setEllipsizedWidth(ellipsisWidth)
                                 .setMaxLines(maxLines)
                                 .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)
