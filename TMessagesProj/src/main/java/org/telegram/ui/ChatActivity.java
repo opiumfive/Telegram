@@ -305,6 +305,7 @@ import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.UnreadCounterTextView;
 import org.telegram.ui.Components.ViewHelper;
+import org.telegram.ui.Components.spoilers.DeleteEffectView;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
@@ -1062,6 +1063,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private PinchToZoomHelper pinchToZoomHelper;
     public EmojiAnimationsOverlay emojiAnimationsOverlay;
+    public DeleteEffectView deleteEffectView;
     public float drawingChatLisViewYoffset;
     public int blurredViewTopOffset;
     public int blurredViewBottomOffset;
@@ -1840,6 +1842,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             if (emojiAnimationsOverlay != null) {
                 emojiAnimationsOverlay.cancelAllAnimations();
+            }
+            if (deleteEffectView != null) {
+                deleteEffectView.cancelAllAnimations();
             }
             ReactionsEffectOverlay.dismissAll();
             if (!fromDraft) {
@@ -5335,6 +5340,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     });
                 }
             };
+
+            chatListItemAnimator.setRemoveDuration(300);
         }
 
         chatLayoutManager = new GridLayoutManagerFixed(context, 1000, LinearLayoutManager.VERTICAL, true) {
@@ -5717,6 +5724,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 invalidateMessagesVisiblePart();
                 textSelectionHelper.onParentScrolled();
                 emojiAnimationsOverlay.onScrolled(dy);
+                deleteEffectView.onScrolled(dy);
                 ReactionsEffectOverlay.onScrolled(dy);
 
                 checkTranslation(false);
@@ -7316,6 +7324,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 updateMessagesVisiblePart(false);
             }
         };
+        deleteEffectView = new DeleteEffectView(ChatActivity.this, chatListView, dialog_id);
         actionBar.setDrawBlurBackground(contentView);
 
         if (isTopic) {
@@ -13647,6 +13656,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 pullingDownDrawable.onAttach();
             }
             emojiAnimationsOverlay.onAttachedToWindow();
+            deleteEffectView.onAttachedToWindow();
         }
 
         @Override
@@ -13658,6 +13668,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 pullingDownDrawable = null;
             }
             emojiAnimationsOverlay.onDetachedFromWindow();
+            deleteEffectView.onDetachedFromWindow();
             AndroidUtilities.runOnUIThread(() -> {
                 ReactionsEffectOverlay.removeCurrent(true);
             });
@@ -14238,6 +14249,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             emojiAnimationsOverlay.draw(canvas);
+            deleteEffectView.draw(canvas);
 
             if (restoreToCount >= 0) {
                 canvas.restore();
@@ -20703,6 +20715,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         int commentsDeleted = 0;
+        List<DeleteEffectView.CellDeleteRequest> cellsForDelete = new ArrayList<>();
         for (int a = 0; a < size; a++) {
             Integer mid = markAsDeletedMessages.get(a);
             MessageObject obj = messagesDict[loadIndex].get(mid);
@@ -20762,6 +20775,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatAdapter != null) {
                         removedIndexes.add(chatAdapter.messagesStartRow + index);
                     }
+                    ChatMessageCell chatMessageCell = findMessageCell(removed.getId(), true);
+                    if (chatMessageCell != null) {
+                        DeleteEffectView.CellDeleteRequest req = new DeleteEffectView.CellDeleteRequest();
+                        req.cell = chatMessageCell;
+                        int[] location = new int[2];
+                        int[] cords = new int[2];
+
+                        actionBar.getLocationOnScreen(cords);
+                        final int actionBarTop = cords[1];
+                        final int actionBatBottom = actionBarTop + actionBar.getMeasuredHeight();
+                        chatListView.getLocationOnScreen(cords);
+                        final int keyboardCompensation = actionBatBottom - cords[1];
+                        final int y = (int) chatMessageCell.getY() - keyboardCompensation;
+
+                        location[0] = (int) (chatListView.getX() + chatMessageCell.getX());
+                        location[1] = y; //(int) (chatListView.getY() + chatMessageCell.getY()) - AndroidUtilities.dp(87);
+
+                        req.location = location;
+                        req.isGroup = removed.getGroupId() != 0 && groupedMessagesMap.get(removed.getGroupId()) != null;
+                        req.groupId = removed.getGroupId();
+                        cellsForDelete.add(req);
+                    }
                     if (removed.getGroupId() != 0) {
                         MessageObject.GroupedMessages groupedMessages = groupedMessagesMap.get(removed.getGroupId());
                         if (groupedMessages != null) {
@@ -20794,6 +20829,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         }
+
+        // prevent delete effect animation for group messages regroup
+        if (newGroups != null) {
+            for (int a = 0; a < newGroups.size(); a++) {
+                MessageObject.GroupedMessages groupedMessages = newGroups.valueAt(a);
+                if (!groupedMessages.messages.isEmpty()) {
+                    for (int k = 0; k < cellsForDelete.size(); k++) {
+                        if (cellsForDelete.get(k).groupId == groupedMessages.groupId) {
+                            cellsForDelete.remove(k);
+                            k--;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!cellsForDelete.isEmpty()) {
+            deleteEffectView.showAnimationForCells(cellsForDelete);
+        }
+
         if (updatedReplies) {
             updateReplyMessageHeader(true);
         }
@@ -20806,6 +20861,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 addToSelectedMessages(null, false, true);
             }
             updateActionModeTitle();
+        }
+        if (messages != null && messages.isEmpty()) {
+            chatListItemAnimator.setRemoveDelay(750);
+        } else {
+            chatListItemAnimator.setRemoveDelay(700);
         }
         if (newGroups != null) {
             for (int a = 0; a < newGroups.size(); a++) {
@@ -20833,38 +20893,41 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
         if (messages.isEmpty()) {
-            if (!endReached[0] && !loading) {
-                showProgressView(false);
-                if (chatListView != null) {
-                    chatListView.setEmptyView(null);
-                }
-                if (currentEncryptedChat == null) {
-                    maxMessageId[0] = maxMessageId[1] = Integer.MAX_VALUE;
-                    minMessageId[0] = minMessageId[1] = Integer.MIN_VALUE;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!endReached[0] && !loading) {
+                    showProgressView(false);
+                    if (chatListView != null) {
+                        chatListView.setEmptyView(null);
+                    }
+                    if (currentEncryptedChat == null) {
+                        maxMessageId[0] = maxMessageId[1] = Integer.MAX_VALUE;
+                        minMessageId[0] = minMessageId[1] = Integer.MIN_VALUE;
+                    } else {
+                        maxMessageId[0] = maxMessageId[1] = Integer.MIN_VALUE;
+                        minMessageId[0] = minMessageId[1] = Integer.MAX_VALUE;
+                    }
+                    maxDate[0] = maxDate[1] = Integer.MIN_VALUE;
+                    minDate[0] = minDate[1] = 0;
+                    waitingForLoad.add(lastLoadIndex);
+                    getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 30, 0, 0, !cacheEndReached[0], minDate[0], classGuid, 0, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
+                    loading = true;
                 } else {
-                    maxMessageId[0] = maxMessageId[1] = Integer.MIN_VALUE;
-                    minMessageId[0] = minMessageId[1] = Integer.MAX_VALUE;
-                }
-                maxDate[0] = maxDate[1] = Integer.MIN_VALUE;
-                minDate[0] = minDate[1] = 0;
-                waitingForLoad.add(lastLoadIndex);
-                getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 30, 0, 0, !cacheEndReached[0], minDate[0], classGuid, 0, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
-                loading = true;
-            } else {
-                if (botButtons != null) {
-                    botButtons = null;
-                    if (chatActivityEnterView != null) {
-                        chatActivityEnterView.setButtons(null, false);
+                    if (botButtons != null) {
+                        botButtons = null;
+                        if (chatActivityEnterView != null) {
+                            chatActivityEnterView.setButtons(null, false);
+                        }
+                    }
+                    if (currentEncryptedChat == null && currentUser != null && currentUser.bot && botUser == null) {
+                        botUser = "";
+                        updateBottomOverlay();
                     }
                 }
-                if (currentEncryptedChat == null && currentUser != null && currentUser.bot && botUser == null) {
-                    botUser = "";
-                    updateBottomOverlay();
-                }
-            }
-            canShowPagedownButton = false;
-            updatePagedownButtonVisibility(true);
-            showMentionDownButton(false, true);
+                canShowPagedownButton = false;
+                updatePagedownButtonVisibility(true);
+                showMentionDownButton(false, true);
+            }, 1200);
+
         }
         if (updated) {
             if (chatMode == MODE_PINNED) {
