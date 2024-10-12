@@ -18,16 +18,12 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
-import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.style.ReplacementSpan;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -41,11 +37,13 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.GroupCreateUserCell;
 
 public class GroupCreateSpan extends View {
 
     private long uid;
     private String key;
+    public boolean isFlag;
     private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private static Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Drawable deleteDrawable;
@@ -84,6 +82,7 @@ public class GroupCreateSpan extends View {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.small = small;
+        isFlag = false;
 
         currentContact = contact;
         deleteDrawable = getResources().getDrawable(R.drawable.delete);
@@ -136,6 +135,21 @@ public class GroupCreateSpan extends View {
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
                     uid = Long.MIN_VALUE + 6;
                     firstName = LocaleController.getString("FilterRead", R.string.FilterRead);
+                    break;
+                case "existing_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_EXISTING_CHATS);
+                    uid = Long.MIN_VALUE + 8;
+                    firstName = LocaleController.getString(R.string.FilterExistingChats);
+                    break;
+                case "new_chats":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NEW_CHATS);
+                    uid = Long.MIN_VALUE + 9;
+                    firstName = LocaleController.getString(R.string.FilterNewChats);
+                    break;
+                case "premium":
+                    isFlag = true;
+                    avatarDrawable.setColor(Theme.getColor(Theme.key_premiumGradientBackground2, resourcesProvider));
+                    firstName = LocaleController.getString(R.string.PrivacyPremium);
                     break;
                 case "archived":
                 default:
@@ -222,7 +236,11 @@ public class GroupCreateSpan extends View {
             textWidth = (int) Math.ceil(nameLayout.getLineWidth(0));
             textX = -nameLayout.getLineLeft(0);
         }
-        imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
+        if (object instanceof String && "premium".equals((String) object)) {
+            imageReceiver.setImageBitmap(GroupCreateUserCell.makePremiumUsersDrawable(getContext(), true));
+        } else {
+            imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
+        }
         updateColors();
 
         NotificationCenter.listenEmojiLoading(this);

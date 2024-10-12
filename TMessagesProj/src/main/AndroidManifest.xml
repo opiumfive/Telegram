@@ -79,6 +79,8 @@
 
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.segmentation.subject"/>
+
     <queries>
         <package android:name="com.google.android.apps.maps"/>
         <intent>
@@ -266,6 +268,9 @@
             </intent-filter>
             <meta-data android:name="android.service.chooser.chooser_target_service" android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="com.google.mlkit.vision.DEPENDENCIES"
+                android:value="subject_segment" />
         </activity>
         <activity-alias
             android:name="org.telegram.ui.CallsActivity"
@@ -345,6 +350,11 @@
 <!--        </activity>-->
         <activity
             android:name="org.telegram.messenger.OpenChatReceiver"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name="org.telegram.messenger.OpenAttachedMenuBotReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:exported="true">
         </activity>
@@ -570,8 +580,6 @@
         <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />
 
         <meta-data android:name="android.max_aspect" android:value="2.5" />
-
-        <meta-data android:name="com.google.android.actions" android:resource="@xml/actions" />
 
     </application>
 

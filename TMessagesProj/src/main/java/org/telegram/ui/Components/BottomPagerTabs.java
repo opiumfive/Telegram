@@ -46,9 +46,18 @@ public class BottomPagerTabs extends View {
         final AnimatedFloat nonscrollingT = new AnimatedFloat(BottomPagerTabs.this, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
         public int customEndFrameMid;
         public int customEndFrameEnd;
+        public boolean customFrameInvert;
 
-        public Tab(int i, int resId, CharSequence text) {
+        public Tab customFrameInvert() {
+            this.customFrameInvert = true;
+            return this;
+        }
+
+        public Tab(int i, int resId, int endFrameMid, int endFrameEnd, CharSequence text) {
             this.i = i;
+
+            customEndFrameMid = endFrameMid;
+            customEndFrameEnd = endFrameEnd;
 
             drawable = new RLottieDrawable(resId, "" + resId, dp(29), dp(29));
             drawable.setMasterParent(BottomPagerTabs.this);
@@ -68,6 +77,9 @@ public class BottomPagerTabs extends View {
 
         private boolean active;
         public void setActive(boolean active, boolean animated) {
+            if (customFrameInvert) {
+                active = !active;
+            }
             if (this.active == active) {
                 return;
             }

@@ -1,16 +1,12 @@
 package org.telegram.messenger.video;
 
 import android.media.MediaCodec;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.video.audio_input.AudioInput;
-import org.telegram.messenger.video.audio_input.GeneralAudioInput;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -60,12 +56,12 @@ public class AudioRecoder {
             }
         }
 
-        encoder = MediaCodec.createEncoderByType(MediaController.AUIDO_MIME_TYPE);
-        format = MediaFormat.createAudioFormat(MediaController.AUIDO_MIME_TYPE,
+        encoder = MediaCodec.createEncoderByType(MediaController.AUDIO_MIME_TYPE);
+        format = MediaFormat.createAudioFormat(MediaController.AUDIO_MIME_TYPE,
                 sampleRate,
                 channelCount
         );
-        format.setInteger(MediaFormat.KEY_BIT_RATE, 64 * 1024);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, DEFAULT_BIT_RATE);
         encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         encoder.start();
 
@@ -88,7 +84,7 @@ public class AudioRecoder {
         }
     }
 
-    public boolean step(MP4Builder muxer, int audioTrackIndex) throws Exception {
+    public boolean step(MediaCodecVideoConvertor.Muxer muxer, int audioTrackIndex) throws Exception {
         if (!encoderInputDone) {
             int encoderBufferIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
             if (encoderBufferIndex >= 0) {

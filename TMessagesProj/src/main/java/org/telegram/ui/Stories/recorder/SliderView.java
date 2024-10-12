@@ -34,6 +34,7 @@ public class SliderView extends View {
     public static final int TYPE_VOLUME = 0;
     public static final int TYPE_WARMTH = 1;
     public static final int TYPE_INTENSITY = 2;
+    public static final int TYPE_DIMMING = 3;
 
     private final int currentType;
 
@@ -87,6 +88,8 @@ public class SliderView extends View {
                 text2.setText(LocaleController.getString(R.string.FlashWarmth));
             } else if (currentType == TYPE_INTENSITY) {
                 text2.setText(LocaleController.getString(R.string.FlashIntensity));
+            } else if (currentType == TYPE_DIMMING) {
+                text2.setText(LocaleController.getString(R.string.WallpaperDimming));
             }
         }
         text.setText("");
@@ -103,6 +106,7 @@ public class SliderView extends View {
 
     public SliderView setValue(float volume) {
         this.value = (volume - this.minVolume) / (this.maxVolume - this.minVolume);
+        this.valueAnimated.set(this.value, true);
         updateText(volume);
         return this;
     }
@@ -110,6 +114,12 @@ public class SliderView extends View {
     public SliderView setOnValueChange(Utilities.Callback<Float> listener) {
         onValueChange = listener;
         return this;
+    }
+
+    public void animateValueTo(float volume) {
+        this.valueIsAnimated = true;
+        this.value = (volume - this.minVolume) / (this.maxVolume - this.minVolume);
+        updateText(volume);
     }
 
     private final Path clipPath = new Path();
@@ -208,10 +218,7 @@ public class SliderView extends View {
                     } catch (Exception ignore) {
                     }
                 } else if (Math.floor(pastVolume * 5) != Math.floor(volume * 5)) {
-                    try {
-                        performHapticFeedback(HapticFeedbackConstants.TEXT_HANDLE_MOVE, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                    } catch (Exception ignore) {
-                    }
+                    AndroidUtilities.vibrateCursor(this);
                 }
             }
             updateText(volume);
@@ -246,7 +253,11 @@ public class SliderView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        r = dpf2(6.33f);
+        if (currentType == TYPE_DIMMING) {
+            r = dpf2(8);
+        } else {
+            r = dpf2(6.33f);
+        }
         textPaint.setTextSize(dp(16));
         text.setTextSize(dp(15));
         if (currentType == TYPE_VOLUME) {

@@ -115,6 +115,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
             req.chatlist = new TL_chatlists.TL_inputChatlistDialogFilter();
             req.chatlist.filter_id = filterId;
             fragment.getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (fragment.getParentActivity() == null) {
+                    return;
+                }
                 FolderBottomSheet sheet;
                 if (res instanceof TLRPC.Vector) {
                     ArrayList<Long> suggestions = new ArrayList<>();
@@ -913,7 +916,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         return new RecyclerListView.SelectionAdapter() {
 
             private static final int

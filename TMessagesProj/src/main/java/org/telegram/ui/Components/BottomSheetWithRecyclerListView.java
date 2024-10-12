@@ -43,10 +43,13 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
-        super(fragment.getParentActivity(), needFocus, resourcesProvider);
+        this(fragment.getParentActivity(), fragment, needFocus, hasFixedSize, useNested, resourcesProvider);
+    }
+
+    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
+        super(context, needFocus, resourcesProvider);
         this.baseFragment = fragment;
         this.hasFixedSize = hasFixedSize;
-        Context context = fragment.getParentActivity();
         headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
         FrameLayout containerView;
         if (useNested) {
@@ -133,7 +136,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
         if (hasFixedSize) {
             recyclerListView.setHasFixedSize(true);
-            recyclerListView.setAdapter(createAdapter());
+            recyclerListView.setAdapter(createAdapter(recyclerListView));
             setCustomView(containerView);
             containerView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
@@ -157,10 +160,10 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
             actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
 
             actionBar.setCastShadows(true);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setTitle(getTitle());
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
@@ -187,7 +190,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     protected void resetAdapter(Context context) {
-        RecyclerListView.SelectionAdapter adapter = createAdapter();
+        RecyclerListView.SelectionAdapter adapter = createAdapter(recyclerListView);
         recyclerListView.setAdapter(new RecyclerListView.SelectionAdapter() {
 
             @Override
@@ -251,6 +254,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             headerShadowDrawable.setBounds(backgroundPaddingLeft, actionBar.getBottom(), parentView.getMeasuredWidth() - backgroundPaddingLeft, actionBar.getBottom() + headerShadowDrawable.getIntrinsicHeight());
             headerShadowDrawable.setAlpha((int) (255 * actionBar.getAlpha() * shadowAlpha));
             headerShadowDrawable.draw(canvas);
+            if (headerShadowDrawable.getAlpha() < 255) {
+                parentView.invalidate();
+            }
         }
         wasDrawn = true;
     }
@@ -302,7 +308,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     protected abstract CharSequence getTitle();
 
-    protected abstract RecyclerListView.SelectionAdapter createAdapter();
+    protected abstract RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView);
 
     public void notifyDataSetChanged() {
         recyclerListView.getAdapter().notifyDataSetChanged();

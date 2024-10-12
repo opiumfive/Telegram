@@ -213,8 +213,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             }
             generatingCache = false;
             decodeFrameFinishedInternal();
+            if (whenCacheDone != null) {
+                whenCacheDone.run();
+                whenCacheDone = null;
+            }
         }
     };
+
+    public Runnable whenCacheDone;
 
     BitmapsCache bitmapsCache;
     int generateCacheFramePointer;
@@ -1019,6 +1025,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         return true;
     }
 
+    public void post(Runnable runnable) {
+        if (shouldLimitFps && Thread.currentThread() == ApplicationLoader.applicationHandler.getLooper().getThread()) {
+            DispatchQueuePoolBackground.execute(() -> AndroidUtilities.runOnUIThread(runnable), frameWaitSync != null);
+        } else {
+            loadFrameRunnableQueue.execute(() -> AndroidUtilities.runOnUIThread(runnable));
+        }
+    }
+
     public boolean isHeavyDrawable() {
         return isDice == 0;
     }
@@ -1191,6 +1205,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         drawInternal(canvas, paint, false, 0, 0);
     }
 
+    public boolean scaleByCanvas;
+    public Rect srcRect = new Rect();
+
     public void drawInternal(Canvas canvas, Paint overridePaint, boolean drawInBackground, long time, int threadIndex) {
         if (!canLoadFrames() || destroyWhenDone) {
             return;
@@ -1228,11 +1245,17 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             if (!needScale) {
                 canvas.drawBitmap(renderingBitmap, rect.left, rect.top, paint);
             } else {
-                canvas.save();
-                canvas.translate(rect.left, rect.top);
-                canvas.scale(scaleX, scaleY);
-                canvas.drawBitmap(renderingBitmap, 0, 0, paint);
-                canvas.restore();
+                if (scaleByCanvas) {
+                    // save-restore breaks cutting with xfer
+                    srcRect.set(0, 0, renderingBitmap.getWidth(), renderingBitmap.getHeight());
+                    canvas.drawBitmap(renderingBitmap, srcRect, rect, paint);
+                } else {
+                    canvas.save();
+                    canvas.translate(rect.left, rect.top);
+                    canvas.scale(scaleX, scaleY);
+                    canvas.drawBitmap(renderingBitmap, 0, 0, paint);
+                    canvas.restore();
+                }
             }
 
             if (isRunning && !drawInBackground) {

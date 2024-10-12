@@ -155,7 +155,7 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
     @Override
-    protected RecyclerListView.SelectionAdapter createAdapter() {
+    protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
         adapter = new Adapter(currentAccount, false, resourcesProvider);
         adapter.containerView = containerView;
         return adapter;
@@ -323,6 +323,11 @@ public class DoubledLimitsBottomSheet extends BottomSheetWithRecyclerListView im
                     LocaleController.getString("ConnectedAccountsLimitTitle", R.string.ConnectedAccountsLimitTitle),
                     LocaleController.formatString("ConnectedAccountsLimitSubtitle", R.string.ConnectedAccountsLimitSubtitle, 4),
                     UserConfig.MAX_ACCOUNT_DEFAULT_COUNT, UserConfig.MAX_ACCOUNT_COUNT
+            ));
+            limits.add(new Limit(
+                    LocaleController.getString(R.string.SimilarChannelsLimitTitle),
+                    LocaleController.formatString(R.string.SimilarChannelsLimitSubtitle, messagesController.recommendedChannelsLimitPremium),
+                    messagesController.recommendedChannelsLimitDefault, messagesController.recommendedChannelsLimitPremium
             ));
 
             rowCount = 0;

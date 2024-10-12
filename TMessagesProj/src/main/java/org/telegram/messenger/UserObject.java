@@ -18,6 +18,7 @@ import org.telegram.tgnet.TLRPC;
 public class UserObject {
 
     public static final long REPLY_BOT = 1271266957L;
+    public static final long ANONYMOUS = 2666000L;
 
     public static boolean isDeleted(TLRPC.User user) {
         return user == null || user instanceof TLRPC.TL_userDeleted_old2 || user instanceof TLRPC.TL_userEmpty || user.deleted;
@@ -32,7 +33,11 @@ public class UserObject {
     }
 
     public static boolean isReplyUser(TLRPC.User user) {
-        return user != null && (user.id == 708513 || user.id == REPLY_BOT);
+        return user != null && (user.id == 708513L || user.id == REPLY_BOT);
+    }
+
+    public static boolean isAnonymous(TLRPC.User user) {
+        return user != null && user.id == ANONYMOUS;
     }
 
     public static boolean isReplyUser(long did) {
@@ -102,7 +107,25 @@ public class UserObject {
         } else if (!allowShort && name.length() <= 2) {
             return ContactsController.formatName(user.first_name, user.last_name);
         }
-        return !TextUtils.isEmpty(name) ? name : LocaleController.getString("HiddenName", R.string.HiddenName);
+        return !TextUtils.isEmpty(name) ? name : LocaleController.getString(R.string.HiddenName);
+    }
+
+    public static String getForcedFirstName(TLRPC.User user) {
+        if (user == null || isDeleted(user)) {
+            return "DELETED";
+        }
+        String name = user.first_name;
+        if (TextUtils.isEmpty(name)) {
+            name = user.last_name;
+        }
+        if (name == null) {
+            return LocaleController.getString(R.string.HiddenName);
+        }
+        int index = name.indexOf(" ");
+        if (index >= 0) {
+            name = name.substring(0, index);
+        }
+        return name;
     }
 
     public static boolean hasPhoto(TLRPC.User user) {
@@ -141,5 +164,34 @@ public class UserObject {
 
     public static boolean isService(long user_id) {
         return user_id == 333000 || user_id == 777000 || user_id == 42777;
+    }
+
+    public static MessagesController.PeerColor getPeerColorForAvatar(int currentAccount, TLRPC.User user) {
+//        if (user != null && user.profile_color != null && user.profile_color.color >= 0 && MessagesController.getInstance(currentAccount).profilePeerColors != null) {
+//            return MessagesController.getInstance(currentAccount).profilePeerColors.getColor(user.profile_color.color);
+//        }
+        return null;
+    }
+
+    public static int getColorId(TLRPC.User user) {
+        if (user == null) return 0;
+        if (user.color != null && (user.color.flags & 1) != 0) return user.color.color;
+        return (int) (user.id % 7);
+    }
+
+    public static long getEmojiId(TLRPC.User user) {
+        if (user != null && user.color != null && (user.color.flags & 2) != 0) return user.color.background_emoji_id;
+        return 0;
+    }
+
+    public static int getProfileColorId(TLRPC.User user) {
+        if (user == null) return 0;
+        if (user.profile_color != null && (user.profile_color.flags & 1) != 0) return user.profile_color.color;
+        return -1;
+    }
+
+    public static long getProfileEmojiId(TLRPC.User user) {
+        if (user != null && user.profile_color != null && (user.profile_color.flags & 2) != 0) return user.profile_color.background_emoji_id;
+        return 0;
     }
 }

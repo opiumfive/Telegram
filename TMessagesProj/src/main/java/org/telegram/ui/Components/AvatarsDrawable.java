@@ -56,6 +56,7 @@ public class AvatarsDrawable {
     public int count;
     public int height;
     public int width;
+    public int strokeWidth = AndroidUtilities.dp(1.67f);
 
     View parent;
     private int overrideSize;
@@ -209,6 +210,9 @@ public class AvatarsDrawable {
     }
 
     public void animateFromState(AvatarsDrawable avatarsDrawable, int currentAccount, boolean createAnimator) {
+        if (avatarsDrawable == null) {
+            return;
+        }
         if (avatarsDrawable.transitionProgressAnimator != null) {
             avatarsDrawable.transitionProgressAnimator.cancel();
             if (transitionInProgress) {
@@ -261,12 +265,14 @@ public class AvatarsDrawable {
         for (int a = 0; a < 3; a++) {
             currentStates[a] = new DrawingState();
             currentStates[a].imageReceiver = new ImageReceiver(parent);
+            currentStates[a].imageReceiver.setInvalidateAll(true);
             currentStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             currentStates[a].avatarDrawable = new AvatarDrawable();
             currentStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
 
             animatingStates[a] = new DrawingState();
             animatingStates[a].imageReceiver = new ImageReceiver(parent);
+            animatingStates[a].imageReceiver.setInvalidateAll(true);
             animatingStates[a].imageReceiver.setRoundRadius(AndroidUtilities.dp(12));
             animatingStates[a].avatarDrawable = new AvatarDrawable();
             animatingStates[a].avatarDrawable.setTextSize(AndroidUtilities.dp(12));
@@ -305,10 +311,10 @@ public class AvatarsDrawable {
             long id = MessageObject.getPeerId(participant.peer);
             if (DialogObject.isUserDialog(id)) {
                 currentUser = MessagesController.getInstance(account).getUser(id);
-                animatingStates[index].avatarDrawable.setInfo(currentUser);
+                animatingStates[index].avatarDrawable.setInfo(account, currentUser);
             } else {
                 currentChat = MessagesController.getInstance(account).getChat(-id);
-                animatingStates[index].avatarDrawable.setInfo(currentChat);
+                animatingStates[index].avatarDrawable.setInfo(account, currentChat);
             }
             if (currentStyle == 4) {
                 if (id == AccountInstance.getInstance(account).getUserConfig().getClientUserId()) {
@@ -332,14 +338,14 @@ public class AvatarsDrawable {
             } else {
                 animatingStates[index].avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NORMAL);
                 animatingStates[index].avatarDrawable.setScaleSize(1f);
-                animatingStates[index].avatarDrawable.setInfo(currentUser);
+                animatingStates[index].avatarDrawable.setInfo(account, currentUser);
             }
             animatingStates[index].id = currentUser.id;
         } else {
             currentChat = (TLRPC.Chat) object;
             animatingStates[index].avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_NORMAL);
             animatingStates[index].avatarDrawable.setScaleSize(1f);
-            animatingStates[index].avatarDrawable.setInfo(currentChat);
+            animatingStates[index].avatarDrawable.setInfo(account, currentChat);
             animatingStates[index].id = -currentChat.id;
         }
         if (currentUser != null) {
@@ -585,7 +591,7 @@ public class AvatarsDrawable {
                         states[a].wavesDrawable.draw(canvas, imageReceiver.getCenterX(), imageReceiver.getCenterY(), parent);
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
                     } else {
-                        float rad = getSize() / 2f + AndroidUtilities.dp(2);
+                        float rad = getSize() / 2f + strokeWidth;
                         if (useAlphaLayer) {
                             canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), rad, xRefP);
                         } else {

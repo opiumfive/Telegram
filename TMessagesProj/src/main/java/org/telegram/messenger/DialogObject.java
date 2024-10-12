@@ -8,10 +8,14 @@
 
 package org.telegram.messenger;
 
+import android.text.TextUtils;
+
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+
+import java.util.ArrayList;
 
 public class DialogObject {
 
@@ -163,4 +167,46 @@ public class DialogObject {
         }
         return null;
     }
+
+    public static long getEmojiStatusDocumentId(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
+            return ((TLRPC.TL_emojiStatus) emojiStatus).document_id;
+        } else if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {
+            return ((TLRPC.TL_emojiStatusUntil) emojiStatus).document_id;
+        } else {
+            return 0;
+        }
+    }
+
+    public static int getEmojiStatusUntil(TLRPC.EmojiStatus emojiStatus) {
+        if (emojiStatus instanceof TLRPC.TL_emojiStatusUntil && ((TLRPC.TL_emojiStatusUntil) emojiStatus).until > (int) (System.currentTimeMillis() / 1000)) {
+            return ((TLRPC.TL_emojiStatusUntil) emojiStatus).until;
+        }
+        return 0;
+    }
+
+    public static boolean emojiStatusesEqual(TLRPC.EmojiStatus a, TLRPC.EmojiStatus b) {
+        return getEmojiStatusDocumentId(a) == getEmojiStatusDocumentId(b) && getEmojiStatusUntil(a) == getEmojiStatusUntil(b);
+    }
+
+    public static TLRPC.TL_username findUsername(String username, TLRPC.User user) {
+        if (user == null) return null;
+        return findUsername(username, user.usernames);
+    }
+
+    public static TLRPC.TL_username findUsername(String username, TLRPC.Chat chat) {
+        if (chat == null) return null;
+        return findUsername(username, chat.usernames);
+    }
+
+    public static TLRPC.TL_username findUsername(String username, ArrayList<TLRPC.TL_username> usernames) {
+        if (usernames == null) return null;
+        for (TLRPC.TL_username u : usernames) {
+            if (u != null && TextUtils.equals(u.username, username)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
 }

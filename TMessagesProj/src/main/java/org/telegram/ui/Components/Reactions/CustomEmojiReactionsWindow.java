@@ -1,7 +1,9 @@
 package org.telegram.ui.Components.Reactions;
 
+import static org.telegram.ui.Components.ReactionsContainerLayout.TYPE_STICKER_SET_EMOJI;
 import static org.telegram.ui.Components.ReactionsContainerLayout.TYPE_STORY;
 import static org.telegram.ui.Components.ReactionsContainerLayout.TYPE_STORY_LIKES;
+import static org.telegram.ui.Components.ReactionsContainerLayout.TYPE_TAGS;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -47,6 +49,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -66,7 +69,7 @@ import java.util.List;
 
 public class CustomEmojiReactionsWindow {
 
-    ContainerView containerView;
+    public ContainerView containerView;
     WindowManager windowManager;
     public FrameLayout windowView;
     boolean attachToParent;
@@ -159,12 +162,13 @@ public class CustomEmojiReactionsWindow {
                 dismiss();
             }
         });
-        attachToParent = type == TYPE_STORY_LIKES;
+        attachToParent = type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI;
 
         // sizeNotifierFrameLayout.setFitsSystemWindows(true);
 
         containerView = new ContainerView(context);
-        selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(baseFragment, context, false, null, SelectAnimatedEmojiDialog.TYPE_REACTIONS, type != TYPE_STORY, resourcesProvider, 16) {
+        final int dialogType = reactionsContainerLayout.getWindowType();
+        selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(baseFragment, context, false, null, dialogType, type != TYPE_STORY, resourcesProvider, 16) {
 
             @Override
             public boolean prevWindowKeyboardVisible() {
@@ -198,7 +202,7 @@ public class CustomEmojiReactionsWindow {
 
             @Override
             protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, Integer until) {
-                if (!UserConfig.getInstance(baseFragment.getCurrentAccount()).isPremium()) {
+                if (baseFragment != null && reactionsContainerLayout.getWindowType() != SelectAnimatedEmojiDialog.TYPE_STICKER_SET_EMOJI && !UserConfig.getInstance(baseFragment.getCurrentAccount()).isPremium()) {
                     windowView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     BulletinFactory.of(windowView, null).createEmojiBulletin(
                             document,
@@ -208,7 +212,11 @@ public class CustomEmojiReactionsWindow {
                     ).show();
                     return;
                 }
-                reactionsContainerLayout.onReactionClicked(emojiView, ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId), false);
+                if (documentId == null && document == null) return;
+                if (document != null) {
+                    AnimatedEmojiDrawable.getDocumentFetcher(UserConfig.selectedAccount).putDocument(document);
+                }
+                reactionsContainerLayout.onReactionClicked(emojiView, ReactionsLayoutInBubble.VisibleReaction.fromCustomEmoji(documentId == null ? document.id : documentId), false);
                 AndroidUtilities.hideKeyboard(windowView);
             }
 
@@ -308,7 +316,7 @@ public class CustomEmojiReactionsWindow {
     private WindowManager.LayoutParams createLayoutParams(boolean focusable) {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.width = lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.type = type == ReactionsContainerLayout.TYPE_DEFAULT ? WindowManager.LayoutParams.TYPE_APPLICATION_PANEL : WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
+        lp.type = (type == ReactionsContainerLayout.TYPE_DEFAULT || type == ReactionsContainerLayout.TYPE_TAGS) ? WindowManager.LayoutParams.TYPE_APPLICATION_PANEL : WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
         lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         if (focusable) {
             lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
@@ -343,16 +351,22 @@ public class CustomEmojiReactionsWindow {
         }
         windowView.getLocationOnScreen(windowLocation);
         float y = location[1] - windowLocation[1] - AndroidUtilities.dp(44) - AndroidUtilities.dp(52) - (selectAnimatedEmojiDialog.includeHint ? AndroidUtilities.dp(26) : 0) + reactionsContainerLayout.getTopOffset();
+
+        if (reactionsContainerLayout.showExpandableReactions()) {
+            y = location[1] - windowLocation[1] - AndroidUtilities.dp(12);
+        }
+
         if (y + containerView.getMeasuredHeight() > windowView.getMeasuredHeight() - AndroidUtilities.dp(32)) {
             y = windowView.getMeasuredHeight() - AndroidUtilities.dp(32) - containerView.getMeasuredHeight();
         }
+
         if (y < AndroidUtilities.dp(16)) {
             y = AndroidUtilities.dp(16);
         }
 
         if (type == TYPE_STORY) {
             containerView.setTranslationX((windowView.getMeasuredWidth() - containerView.getMeasuredWidth()) / 2f - AndroidUtilities.dp(16));
-        } else if (type == TYPE_STORY_LIKES) {
+        } else if (type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
             containerView.setTranslationX(location[0] - windowLocation[0] - AndroidUtilities.dp(18));
         } else {
             containerView.setTranslationX(location[0] - windowLocation[0] - AndroidUtilities.dp(2));
@@ -692,7 +706,7 @@ public class CustomEmojiReactionsWindow {
         }
     }
 
-    private class ContainerView extends FrameLayout {
+    public class ContainerView extends FrameLayout {
 
         Drawable shadow;
         Rect shadowPad = new Rect();
@@ -723,7 +737,7 @@ public class CustomEmojiReactionsWindow {
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int size;
-            if (type == TYPE_STORY || type == TYPE_STORY_LIKES) {
+            if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                 size = reactionsContainerLayout.getMeasuredWidth();
             } else {
                 size = Math.min(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
@@ -733,9 +747,14 @@ public class CustomEmojiReactionsWindow {
                 }
             }
             int height = size;
-//            if (height * 1.2 < MeasureSpec.getSize(heightMeasureSpec)) {
-//                height *= 1.2;
-//            }
+            if (reactionsContainerLayout.showExpandableReactions()) {
+                int rows = (int) Math.ceil(reactions.size() / 8f);
+                if (rows <= 8) {
+                    height = rows * AndroidUtilities.dp(36) + AndroidUtilities.dp(8);
+                } else {
+                    height = AndroidUtilities.dp(36) * 8 - AndroidUtilities.dp(8);
+                }
+            }
             super.onMeasure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
 
@@ -769,7 +788,7 @@ public class CustomEmojiReactionsWindow {
             }
             if (reactionsContainerLayout.hintView != null) {
                 canvas.save();
-                canvas.translate(drawingRect.left, drawingRect.top + reactionsContainerLayout.hintView.getY());
+                canvas.translate(drawingRect.left, drawingRect.top + reactionsContainerLayout.hintView.getY() - (type == TYPE_TAGS || type == TYPE_STICKER_SET_EMOJI ? reactionsContainerLayout.rect.top : 0));
                 canvas.saveLayerAlpha( 0, 0, reactionsContainerLayout.hintView.getMeasuredWidth(), reactionsContainerLayout.hintView.getMeasuredHeight(), (int) (255 * reactionsContainerLayout.hintView.getAlpha() * (1f - enterTransitionProgress)), Canvas.ALL_SAVE_FLAG);
                 reactionsContainerLayout.hintView.draw(canvas);
                 canvas.restore();
@@ -811,7 +830,8 @@ public class CustomEmojiReactionsWindow {
                 }
                 int top = (int) (selectAnimatedEmojiDialog.getX() + selectAnimatedEmojiDialog.emojiGridView.getX());
                 int left = (int) (selectAnimatedEmojiDialog.getY() + selectAnimatedEmojiDialog.emojiGridView.getY());
-                canvas.clipRect(left, top + AndroidUtilities.dp(36) * enterTransitionProgress, left + selectAnimatedEmojiDialog.emojiGridView.getMeasuredHeight(), top + selectAnimatedEmojiDialog.emojiGridView.getMeasuredWidth());
+                boolean isEmojiTabsVisible = selectAnimatedEmojiDialog.emojiTabs.getParent() != null;
+                canvas.clipRect(left, isEmojiTabsVisible ? top + AndroidUtilities.dp(36) * enterTransitionProgress : 0, left + selectAnimatedEmojiDialog.emojiGridView.getMeasuredWidth(), top + selectAnimatedEmojiDialog.emojiGridView.getMeasuredHeight());
                 for (int i = -1; i < reactionsContainerLayout.recyclerListView.getChildCount(); i++) {
                     View child;
                     if (i == -1) {
