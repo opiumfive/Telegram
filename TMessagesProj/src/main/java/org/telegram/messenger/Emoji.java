@@ -32,21 +32,23 @@ import org.checkerframework.checker.units.qual.A;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
+import org.telegram.ui.Components.ColoredImageSpan;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 
 public class Emoji {
 
-    private static HashMap<CharSequence, DrawableInfo> rects = new HashMap<>();
+    private final static HashMap<CharSequence, DrawableInfo> rects = new HashMap<>();
     public static int drawImgSize;
     public static int bigImgSize;
     private static boolean inited = false;
     public static Paint placeholderPaint;
-    private static int[] emojiCounts = new int[]{
+    private final static int[] emojiCounts = new int[]{
         EmojiData.data[0].length,
         EmojiData.data[1].length,
         EmojiData.data[2].length,
@@ -59,15 +61,15 @@ public class Emoji {
     private static Bitmap[][] emojiBmp = new Bitmap[8][];
     private static boolean[][] loadingEmoji = new boolean[8][];
 
-    public static HashMap<String, Integer> emojiUseHistory = new HashMap<>();
-    public static ArrayList<String> recentEmoji = new ArrayList<>();
-    public static HashMap<String, String> emojiColor = new HashMap<>();
+    public final static HashMap<String, Integer> emojiUseHistory = new HashMap<>();
+    public final static ArrayList<String> recentEmoji = new ArrayList<>();
+    public final static HashMap<String, String> emojiColor = new HashMap<>();
     private static boolean recentEmojiLoaded;
-    public static Runnable invalidateUiRunnable = () -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiLoaded);
+    public final static Runnable invalidateUiRunnable = () -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiLoaded);
     public static float emojiDrawingYOffset;
     public static boolean emojiDrawingUseAlpha = true;
 
-    private static String[] DEFAULT_RECENT = new String[]{
+    private final static String[] DEFAULT_RECENT = new String[]{
         "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
         "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
         "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
@@ -268,7 +270,7 @@ public class Emoji {
     }
 
     public static abstract class EmojiDrawable extends Drawable {
-        boolean fullSize = false;
+        public boolean fullSize = false;
         int placeholderColor = 0x10000000;
 
         public boolean isLoaded() {
@@ -585,13 +587,14 @@ public class Emoji {
         }
 
         AnimatedEmojiSpan[] animatedEmojiSpans = s.getSpans(0, s.length(), AnimatedEmojiSpan.class);
+        ColoredImageSpan[] imageSpans = s.getSpans(0, s.length(), ColoredImageSpan.class);
         EmojiSpan span;
         Drawable drawable;
         int limitCount = SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50;
         for (int i = 0; i < emojis.size(); ++i) {
             try {
                 EmojiSpanRange emojiRange = emojis.get(i);
-                if (animatedEmojiSpans != null) {
+                if (animatedEmojiSpans != null && animatedEmojiSpans.length > 0) {
                     boolean hasAnimated = false;
                     for (int j = 0; j < animatedEmojiSpans.length; ++j) {
                         AnimatedEmojiSpan animatedSpan = animatedEmojiSpans[j];
@@ -601,6 +604,19 @@ public class Emoji {
                         }
                     }
                     if (hasAnimated) {
+                        continue;
+                    }
+                }
+                if (imageSpans != null && imageSpans.length > 0) {
+                    boolean hasImage = false;
+                    for (int j = 0; j < imageSpans.length; ++j) {
+                        ColoredImageSpan imageSpan = imageSpans[j];
+                        if (imageSpan != null && s.getSpanStart(imageSpan) == emojiRange.start && s.getSpanEnd(imageSpan) == emojiRange.end) {
+                            hasImage = true;
+                            break;
+                        }
+                    }
+                    if (hasImage) {
                         continue;
                     }
                 }
@@ -795,6 +811,14 @@ public class Emoji {
                 ((EmojiDrawable) getDrawable()).placeholderColor = 0x10ffffff & ds.getColor();
             }
             super.updateDrawState(ds);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EmojiSpan emojiSpan = (EmojiSpan) o;
+            return Float.compare(scale, emojiSpan.scale) == 0 && size == emojiSpan.size && Objects.equals(emoji, emojiSpan.emoji);
         }
     }
 

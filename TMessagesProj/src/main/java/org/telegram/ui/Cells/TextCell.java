@@ -13,7 +13,9 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -25,7 +27,12 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -39,6 +46,7 @@ import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Switch;
 import org.telegram.ui.FilterCreateActivity;
 import org.telegram.ui.PeerColorActivity;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 public class TextCell extends FrameLayout {
 
@@ -49,7 +57,7 @@ public class TextCell extends FrameLayout {
     public final RLottieImageView imageView;
     private Switch checkBox;
     private ImageView valueImageView;
-    private int leftPadding;
+    public int leftPadding;
     private boolean needDivider;
     public int offsetFromImage = 71;
     public int heightDp = 50;
@@ -371,7 +379,7 @@ public class TextCell extends FrameLayout {
         }
     }
 
-    public void setTextAndIcon(String text, Drawable drawable, boolean divider) {
+    public void setTextAndIcon(CharSequence text, Drawable drawable, boolean divider) {
         offsetFromImage = 71;
         imageLeft = 18;
         textView.setText(text);
@@ -385,6 +393,29 @@ public class TextCell extends FrameLayout {
         }
         imageView.setVisibility(VISIBLE);
         valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+        imageView.setPadding(0, dp(6), 0, 0);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+        if (emojiDrawable != null) {
+            emojiDrawable.set((Drawable) null, false);
+        }
+    }
+
+    public void setTextAndValueAndIcon(CharSequence text, CharSequence value, Drawable drawable, boolean divider) {
+        offsetFromImage = 71;
+        imageLeft = 18;
+        textView.setText(text);
+        textView.setRightDrawable(null);
+        valueTextView.setText(valueText = value, false);
+        imageView.setColorFilter(null);
+        if (drawable instanceof RLottieDrawable) {
+            imageView.setAnimation((RLottieDrawable) drawable);
+        } else {
+            imageView.setImageDrawable(drawable);
+        }
+        imageView.setVisibility(VISIBLE);
+        valueTextView.setVisibility(VISIBLE);
         valueImageView.setVisibility(GONE);
         imageView.setPadding(0, dp(6), 0, 0);
         needDivider = divider;
@@ -411,7 +442,8 @@ public class TextCell extends FrameLayout {
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         textView.setRightDrawable(null);
-        valueTextView.setText(TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
+        valueText = value;
+        valueTextView.setText(valueText == null ? null : TextUtils.ellipsize(valueText, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
         valueTextView.setVisibility(VISIBLE);
         valueSpoilersTextView.setVisibility(GONE);
         imageView.setVisibility(GONE);
@@ -503,11 +535,16 @@ public class TextCell extends FrameLayout {
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         textView.setRightDrawable(null);
-        valueTextView.setText(value == null ? "" : TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), animated);
+        imageView.setVisibility(VISIBLE);
+        if (value != null) {
+            int availableWidth = (int) Math.max(1, AndroidUtilities.displaySize.x - (dp(offsetFromImage) + HintView2.measureCorrectly(text, textView.getTextPaint()) + dp(16)));
+            valueTextView.setText(value == null ? "" : TextUtils.ellipsize(valueText = value, valueTextView.getPaint(), availableWidth, TextUtils.TruncateAt.END), animated);
+        } else {
+            valueTextView.setText("", animated);
+        }
         valueTextView.setVisibility(VISIBLE);
         valueSpoilersTextView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
-        imageView.setVisibility(VISIBLE);
         imageView.setTranslationX(0);
         imageView.setTranslationY(0);
         imageView.setPadding(0, dp(7), 0, 0);
@@ -603,7 +640,7 @@ public class TextCell extends FrameLayout {
         }
     }
 
-    public void setTextAndValueDrawable(String text, Drawable drawable, boolean divider) {
+    public void setTextAndValueDrawable(CharSequence text, Drawable drawable, boolean divider) {
         imageLeft = 21;
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
@@ -644,6 +681,25 @@ public class TextCell extends FrameLayout {
         setValueSticker(document);
     }
 
+    public void setTextAndSticker(CharSequence text, String localPath, boolean divider) {
+        imageLeft = 21;
+        offsetFromImage = getOffsetFromImage(false);
+        textView.setText(text);
+        textView.setRightDrawable(null);
+        valueTextView.setText(valueText = null, false);
+        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(GONE);
+        valueSpoilersTextView.setVisibility(GONE);
+        imageView.setVisibility(GONE);
+        imageView.setPadding(0, dp(7), 0, 0);
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
+        if (checkBox != null) {
+            checkBox.setVisibility(GONE);
+        }
+        setValueSticker(localPath);
+    }
+
     public void setValueSticker(TLRPC.Document document) {
         if (emojiDrawable == null) {
             emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(30));
@@ -652,6 +708,64 @@ public class TextCell extends FrameLayout {
             }
         }
         emojiDrawable.set(document, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, true);
+        invalidate();
+    }
+
+    public void setValueSticker(String path) {
+        if (emojiDrawable == null) {
+            emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(30));
+            if (attached) {
+                emojiDrawable.attach();
+            }
+        }
+        ImageReceiver imageReceiver = new ImageReceiver(this);
+        if (isAttachedToWindow()) {
+            imageReceiver.onAttachedToWindow();
+        }
+        addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(@NonNull View v) {
+                imageReceiver.onAttachedToWindow();
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(@NonNull View v) {
+                imageReceiver.onDetachedFromWindow();
+            }
+        });
+        imageReceiver.setImage(path, "30_30", null, null, 0);
+        emojiDrawable.set(new Drawable() {
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                imageReceiver.setImageCoords(getBounds());
+                imageReceiver.draw(canvas);
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+                imageReceiver.setAlpha(alpha / (float) 0xFF);
+            }
+
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {
+                imageReceiver.setColorFilter(colorFilter);
+            }
+
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+
+            @Override
+            public int getIntrinsicWidth() {
+                return dp(30);
+            }
+
+            @Override
+            public int getIntrinsicHeight() {
+                return dp(30);
+            }
+        }, true);
         invalidate();
     }
 

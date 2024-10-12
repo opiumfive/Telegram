@@ -42,8 +42,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.Surface;
@@ -55,9 +53,6 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
-
-import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -66,9 +61,9 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.video.MP4Builder;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -77,7 +72,6 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.InstantCameraView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
 
 import java.io.File;
 import java.io.IOException;
@@ -121,7 +115,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private int focusAreaSize;
     private Drawable thumbDrawable;
 
-    private final boolean useCamera2 = false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.useCamera2;
+    private final boolean useCamera2 = false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.isUsingCamera2(UserConfig.selectedAccount);
     private final CameraSessionWrapper[] cameraSession = new CameraSessionWrapper[2];
     private CameraSessionWrapper cameraSessionRecording;
 
@@ -773,10 +767,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraThread.postRunnable(() -> this.cameraThread = null);
         }
         if (cameraSession[0] != null) {
-            cameraSession[0].destroy(false, null, null);
+            cameraSession[0].destroy(true, null, null);
         }
         if (cameraSession[1] != null) {
-            cameraSession[1].destroy(false, null, null);
+            cameraSession[1].destroy(true, null, null);
         }
         return false;
     }
@@ -1224,8 +1218,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             android.opengl.Matrix.setIdentityM(mSTMatrix[0], 0);
 
-            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RLottieDrawable.readRes(null, R.raw.camera_vert));
-            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RLottieDrawable.readRes(null, R.raw.camera_frag));
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, AndroidUtilities.readRes(R.raw.camera_vert));
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, AndroidUtilities.readRes(R.raw.camera_frag));
             if (vertexShader != 0 && fragmentShader != 0) {
                 drawProgram = GLES20.glCreateProgram();
                 GLES20.glAttachShader(drawProgram, vertexShader);
@@ -2822,8 +2816,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
             textureBuffer.put(texData).position(0);
 
-            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RLottieDrawable.readRes(null, R.raw.camera_vert));
-            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RLottieDrawable.readRes(null, R.raw.camera_frag));
+            int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, AndroidUtilities.readRes(R.raw.camera_vert));
+            int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, AndroidUtilities.readRes(R.raw.camera_frag));
             if (vertexShader != 0 && fragmentShader != 0) {
                 drawProgram = GLES20.glCreateProgram();
                 GLES20.glAttachShader(drawProgram, vertexShader);

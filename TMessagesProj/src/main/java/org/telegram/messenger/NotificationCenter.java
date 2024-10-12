@@ -44,6 +44,7 @@ public class NotificationCenter {
     public static final int loadingMessagesFailed = totalEvents++;
     public static final int messageReceivedByAck = totalEvents++;
     public static final int messageReceivedByServer = totalEvents++;
+    public static final int messageReceivedByServer2 = totalEvents++;
     public static final int messageSendError = totalEvents++;
     public static final int forceImportContactsStart = totalEvents++;
     public static final int contactsDidLoad = totalEvents++;
@@ -92,6 +93,7 @@ public class NotificationCenter {
     public static final int pinnedInfoDidLoad = totalEvents++;
     public static final int botKeyboardDidLoad = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
+    public static final int hashtagSearchUpdated = totalEvents++;
     public static final int chatSearchResultsLoading = totalEvents++;
     public static final int musicDidLoad = totalEvents++;
     public static final int moreMusicDidLoad = totalEvents++;
@@ -103,6 +105,7 @@ public class NotificationCenter {
     public static final int wasUnableToFindCurrentLocation = totalEvents++;
     public static final int reloadHints = totalEvents++;
     public static final int reloadInlineHints = totalEvents++;
+    public static final int reloadWebappsHints = totalEvents++;
     public static final int newDraftReceived = totalEvents++;
     public static final int recentDocumentsDidLoad = totalEvents++;
     public static final int needAddArchivedStickers = totalEvents++;
@@ -141,6 +144,8 @@ public class NotificationCenter {
     public static final int businessMessagesUpdated = totalEvents++;
     public static final int quickRepliesUpdated = totalEvents++;
     public static final int quickRepliesDeleted = totalEvents++;
+    public static final int bookmarkAdded = totalEvents++;
+    public static final int starReactionAnonymousUpdate = totalEvents++;
 
     public static final int businessLinksUpdated = totalEvents++;
     public static final int businessLinkCreated = totalEvents++;
@@ -246,6 +251,19 @@ public class NotificationCenter {
     public static final int timezonesUpdated = totalEvents++;
     public static final int customStickerCreated = totalEvents++;
     public static final int premiumFloodWaitReceived = totalEvents++;
+    public static final int availableEffectsUpdate = totalEvents++;
+    public static final int starOptionsLoaded = totalEvents++;
+    public static final int starGiftOptionsLoaded = totalEvents++;
+    public static final int starGiveawayOptionsLoaded = totalEvents++;
+    public static final int starBalanceUpdated = totalEvents++;
+    public static final int starTransactionsLoaded = totalEvents++;
+    public static final int starSubscriptionsLoaded = totalEvents++;
+    public static final int factCheckLoaded = totalEvents++;
+    public static final int botStarsUpdated = totalEvents++;
+    public static final int botStarsTransactionsLoaded = totalEvents++;
+    public static final int channelStarsUpdated = totalEvents++;
+    public static final int webViewResolved = totalEvents++;
+    public static final int updateAllMessages = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;
@@ -310,6 +328,7 @@ public class NotificationCenter {
     public static final int userEmojiStatusUpdated = totalEvents++;
     public static final int requestPermissions = totalEvents++;
     public static final int permissionsGranted = totalEvents++;
+    public static final int activityPermissionsGranted = totalEvents++;
     public static final int topicsDidLoaded = totalEvents++;
     public static final int chatSwithcedToForum = totalEvents++;
     public static final int didUpdateGlobalAutoDeleteTimer = totalEvents++;

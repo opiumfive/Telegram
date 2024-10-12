@@ -170,7 +170,7 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
         };
         searchField.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
         searchField.setOnSearchTextChange(this::onSearch);
-        searchField.setHintText(LocaleController.getString("Search", R.string.Search), false);
+        searchField.setHintText(LocaleController.getString(R.string.Search), false);
 
         sectionCell = new View(getContext()) {
             @Override
@@ -340,6 +340,8 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
                     visibleItemsFrom = position;
                 }
                 visibleItemsTo = position;
+                if (position - 1 < 0 || position - 1 >= items.size())
+                    continue;
                 SelectorAdapter.Item item = items.get(position - 1);
                 SelectorUserCell cell = (SelectorUserCell) child;
                 cell.setChecked(item.checked, animated);
@@ -361,9 +363,9 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         if (selectedIds.size() == 0) {
             stringBuilder.append("d").setSpan(recipientsBtnSpaceSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            stringBuilder.append(LocaleController.getString("ChooseUsers", R.string.ChooseUsers));
+            stringBuilder.append(LocaleController.getString(R.string.ChooseUsers));
         } else {
-            stringBuilder.append(LocaleController.getString("GiftPremiumProceedBtn", R.string.GiftPremiumProceedBtn));
+            stringBuilder.append(LocaleController.getString(R.string.GiftPremiumProceedBtn));
         }
         actionButton.setCount(selectedIds.size(), true);
         actionButton.setText(stringBuilder, animated, false);
@@ -373,7 +375,7 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
     private void onSearch(String text) {
         this.query = text;
         AndroidUtilities.cancelRunOnUIThread(remoteSearchRunnable);
-        AndroidUtilities.runOnUIThread(remoteSearchRunnable, 350);
+        AndroidUtilities.runOnUIThread(remoteSearchRunnable, 100);
     }
 
     private void clearSearchAfterSelect() {
@@ -429,7 +431,7 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
                 }
                 if (!userItems.isEmpty()) {
                     h += dp(32);
-                    items.add(SelectorAdapter.Item.asTopSection(LocaleController.getString("GiftPremiumFrequentContacts", R.string.GiftPremiumFrequentContacts)));
+                    items.add(SelectorAdapter.Item.asTopSection(LocaleController.getString(R.string.GiftPremiumFrequentContacts)));
                     items.addAll(userItems);
                 }
             }
@@ -479,12 +481,12 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
 
     @Override
     protected CharSequence getTitle() {
-        return LocaleController.getString("ChooseUsers", R.string.ChooseUsers);
+        return LocaleController.getString(R.string.ChooseUsers);
     }
 
     @Override
     protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
-        selectorAdapter = new SelectorAdapter(getContext(), resourcesProvider);
+        selectorAdapter = new SelectorAdapter(getContext(), true, resourcesProvider);
         selectorAdapter.setGreenSelector(true);
         return selectorAdapter;
     }

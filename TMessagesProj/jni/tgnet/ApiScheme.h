@@ -388,6 +388,7 @@ public:
     int64_t color_background_emoji_id;
     int32_t profile_color_color;
     int64_t profile_color_background_emoji_id;
+    int32_t bot_active_users;
 
     static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
@@ -404,7 +405,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0x215c4438;
+    static const uint32_t constructor = 0x83314fca;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -537,6 +538,7 @@ public:
 class MessageEntity : public TLObject {
 
 public:
+    int32_t flags;
     int32_t offset;
     int32_t length;
     std::string url;
@@ -684,6 +686,15 @@ public:
 };
 
 class TL_messageEntityBlockquote : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0xf1ccaaac;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityBlockquote_layer180 : public MessageEntity {
 
 public:
     static const uint32_t constructor = 0x20df5d0;

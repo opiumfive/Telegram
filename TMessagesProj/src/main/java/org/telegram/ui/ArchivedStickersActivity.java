@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -36,6 +37,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class ArchivedStickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -47,6 +49,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     private LinearLayoutManager layoutManager;
     private RecyclerListView listView;
 
+    private HashSet<Long> loadedSets = new HashSet<>();
     private ArrayList<TLRPC.StickerSetCovered> sets = new ArrayList<>();
     private boolean firstLoaded;
     private boolean endReached;
@@ -92,11 +95,11 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (currentType == MediaDataController.TYPE_IMAGE) {
-            actionBar.setTitle(LocaleController.getString("ArchivedStickers", R.string.ArchivedStickers));
+            actionBar.setTitle(LocaleController.getString(R.string.ArchivedStickers));
         } else if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            actionBar.setTitle(LocaleController.getString("ArchivedEmojiPacks", R.string.ArchivedEmojiPacks));
+            actionBar.setTitle(LocaleController.getString(R.string.ArchivedEmojiPacks));
         } else {
-            actionBar.setTitle(LocaleController.getString("ArchivedMasks", R.string.ArchivedMasks));
+            actionBar.setTitle(LocaleController.getString(R.string.ArchivedMasks));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -115,9 +118,9 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
 
         emptyView = new EmptyTextProgressView(context);
         if (currentType == MediaDataController.TYPE_IMAGE) {
-            emptyView.setText(LocaleController.getString("ArchivedStickersEmpty", R.string.ArchivedStickersEmpty));
+            emptyView.setText(LocaleController.getString(R.string.ArchivedStickersEmpty));
         } else {
-            emptyView.setText(LocaleController.getString("ArchivedMasksEmpty", R.string.ArchivedMasksEmpty));
+            emptyView.setText(LocaleController.getString(R.string.ArchivedMasksEmpty));
         }
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         if (loadingStickers) {
@@ -221,8 +224,14 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
 
     private void processResponse(TLRPC.TL_messages_archivedStickers res) {
         if (!isInTransition) {
-            sets.addAll(res.sets);
-            endReached = res.sets.size() != 15;
+            int added = 0;
+            for (TLRPC.StickerSetCovered s : res.sets) {
+                if (loadedSets.contains(s.set.id)) continue;
+                loadedSets.add(s.set.id);
+                sets.add(s);
+                added++;
+            }
+            endReached = added <= 0;
             loadingStickers = false;
             firstLoaded = true;
             if (emptyView != null) {
@@ -344,7 +353,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 if (position == archiveInfoRow) {
                     cell.setTopPadding(17);
                     cell.setBottomPadding(10);
-                    cell.setText(currentType == MediaDataController.TYPE_EMOJIPACKS ? LocaleController.getString("ArchivedEmojiInfo", R.string.ArchivedEmojiInfo) : LocaleController.getString("ArchivedStickersInfo", R.string.ArchivedStickersInfo));
+                    cell.setText(currentType == MediaDataController.TYPE_EMOJIPACKS ? LocaleController.getString(R.string.ArchivedEmojiInfo) : LocaleController.getString(R.string.ArchivedStickersInfo));
                 } else {
                     cell.setTopPadding(10);
                     cell.setBottomPadding(17);

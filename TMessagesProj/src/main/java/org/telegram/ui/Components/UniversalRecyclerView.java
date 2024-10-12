@@ -16,12 +16,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.FiltersSetupActivity;
 
 import java.util.ArrayList;
-
-import kotlinx.coroutines.android.AndroidDispatcherFactory;
 
 public class UniversalRecyclerView extends RecyclerListView {
 
@@ -60,6 +56,19 @@ public class UniversalRecyclerView extends RecyclerListView {
         Utilities.Callback5Return<UItem, View, Integer, Float, Float, Boolean> onLongClick,
         Theme.ResourcesProvider resourcesProvider
     ) {
+        this(context, currentAccount, classGuid, false, fillItems, onClick, onLongClick, resourcesProvider);
+    }
+
+    public UniversalRecyclerView(
+        Context context,
+        int currentAccount,
+        int classGuid,
+        boolean dialog,
+        Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems,
+        Utilities.Callback5<UItem, View, Integer, Float, Float> onClick,
+        Utilities.Callback5Return<UItem, View, Integer, Float, Float, Boolean> onLongClick,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
         super(context, resourcesProvider);
 
         setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
@@ -69,7 +78,7 @@ public class UniversalRecyclerView extends RecyclerListView {
                 return super.getExtraLayoutSpace(state);
             }
         });
-        setAdapter(adapter = new UniversalAdapter(this, context, currentAccount, classGuid, fillItems, resourcesProvider));
+        setAdapter(adapter = new UniversalAdapter(this, context, currentAccount, classGuid, dialog, fillItems, resourcesProvider));
 
         if (onClick != null) {
             setOnItemClickListener((view, position, x, y) -> {

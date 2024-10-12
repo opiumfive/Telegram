@@ -6,7 +6,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -24,7 +23,6 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.checkerframework.common.subtyping.qual.Bottom;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -236,7 +234,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
         titleTextView.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
         titleTextView.setText(LocaleController.getString(R.string.FilterChoose));
-        titleTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleTextView.setTypeface(AndroidUtilities.bold());
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 40, 0));
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
@@ -450,7 +448,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                 drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
                 CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
                 cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-                cell.setTextAndIcon(LocaleController.getString("CreateNewFilter", R.string.CreateNewFilter), combinedDrawable);
+                cell.setTextAndIcon(LocaleController.getString(R.string.CreateNewFilter), combinedDrawable);
             }
         }
     }

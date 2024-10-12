@@ -112,7 +112,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
             reactionsContainerLayout.setDelegate(new ReactionsContainerLayout.ReactionsContainerDelegate() {
                 @Override
                 public void onReactionClicked(View view, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
-                    parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent, false);
+                    parentFragment.selectReaction(null, currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent, false);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (reactionsContainerLayout != null) {
                             reactionsContainerLayout.dismissParent(true);
@@ -226,7 +226,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
                             reactionsContainerLayout.setVisibility(VISIBLE);
                             if (!messageSet) {
                                 messageSet = true;
-                                reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
+                                reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo(), true);
                             }
                         }
                     }
@@ -352,7 +352,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
                 if (reactionsContainerLayout.isEnabled()) {
                     messageSet = true;
-                    reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
+                    reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo(), true);
                     reactionsContainerLayout.startEnterAnimation(false);
                 } else {
                     messageSet = false;

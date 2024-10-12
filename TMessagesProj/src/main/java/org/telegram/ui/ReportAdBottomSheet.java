@@ -8,7 +8,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -37,7 +36,6 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -170,6 +168,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                             }
                         }
                     } else if (response instanceof TLRPC.TL_channels_sponsoredMessageReportResultAdsHidden) {
+                        MessagesController.getInstance(currentAccount).disableAds(false);
                         if (listener != null) {
                             listener.onHidden();
                             dismiss();
@@ -290,7 +289,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                     onBackPressed();
                 }
             });
-            headerView.setText(LocaleController.getString("ReportAd", R.string.ReportAd));
+            headerView.setText(LocaleController.getString(R.string.ReportAd));
             headerView.backDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             headerView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
             addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
@@ -382,7 +381,6 @@ public class ReportAdBottomSheet extends BottomSheet {
                 for (int i = 0; i < option.options.size(); i++) {
                     UItem buttonItem = new UItem(UniversalAdapter.VIEW_TYPE_RIGHT_ICON_TEXT, false);
                     buttonItem.text = option.options.get(i).text;
-                    buttonItem.backgroundKey = Theme.key_dialogBackground;
                     buttonItem.iconResId = R.drawable.msg_arrowright;
                     buttonItem.id = i;
                     items.add(buttonItem);
@@ -399,7 +397,7 @@ public class ReportAdBottomSheet extends BottomSheet {
                     frameLayout.setBackground(combinedDrawable);
                     LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    textView.setText(AndroidUtilities.replaceLinks(LocaleController.getString("ReportAdLearnMore", R.string.ReportAdLearnMore), resourcesProvider));
+                    textView.setText(AndroidUtilities.replaceLinks(LocaleController.getString(R.string.ReportAdLearnMore), resourcesProvider));
                     textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
                     textView.setGravity(Gravity.CENTER);
                     frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 16, 16, 16));
@@ -446,7 +444,7 @@ public class ReportAdBottomSheet extends BottomSheet {
             public BigHeaderCell(Context context, Theme.ResourcesProvider resourcesProvider) {
                 super(context);
                 textView = new TextView(context);
-                textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));

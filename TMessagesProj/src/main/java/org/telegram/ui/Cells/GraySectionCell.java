@@ -25,12 +25,11 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.CarouselView;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.List;
 
-public class GraySectionCell extends FrameLayout {
+public class GraySectionCell extends FrameLayout implements Theme.Colorable {
 
     private AnimatedEmojiSpan.TextViewEmojis textView;
     private AnimatedTextView rightTextView;
@@ -49,7 +48,7 @@ public class GraySectionCell extends FrameLayout {
 
         textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(getThemedColor(Theme.key_graySectionText));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
@@ -68,6 +67,12 @@ public class GraySectionCell extends FrameLayout {
         addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
 
         ViewCompat.setAccessibilityHeading(this, true);
+    }
+
+    public void updateColors() {
+        setBackgroundColor(getThemedColor(Theme.key_graySection));
+        textView.setTextColor(getThemedColor(Theme.key_graySectionText));
+        rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
     }
 
     @Override
@@ -98,7 +103,7 @@ public class GraySectionCell extends FrameLayout {
         rightTextView.setOnClickListener(null);
     }
 
-    public void setText(String left, String right, OnClickListener onClickListener) {
+    public void setText(CharSequence left, CharSequence right, OnClickListener onClickListener) {
         textView.setText(left);
         rightTextView.setText(right, false);
         rightTextView.setOnClickListener(onClickListener);

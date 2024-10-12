@@ -395,7 +395,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl, long effectId) {
 
             }
 
@@ -484,7 +484,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity(Gravity.LEFT);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         avatarContainer.addView(nameTextView);
         layoutParams2 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
         layoutParams2.width = LayoutHelper.WRAP_CONTENT;
@@ -536,6 +536,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         AndroidUtilities.checkDisplaySize(this, newConfig);
+        AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         fixLayout();
     }
 
@@ -553,9 +554,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 return;
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.getString("PermissionNoAudioWithHint", R.string.PermissionNoAudioWithHint));
-            builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
+            builder.setTitle(LocaleController.getString(R.string.AppName));
+            builder.setMessage(LocaleController.getString(R.string.PermissionNoAudioWithHint));
+            builder.setNegativeButton(LocaleController.getString(R.string.PermissionOpenSettings), (dialog, which) -> {
                 try {
                     Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                     intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
@@ -564,7 +565,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     FileLog.e(e);
                 }
             });
-            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+            builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
             builder.show();
         }
     }
@@ -814,7 +815,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                         TextView textView = new TextView(this);
                         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
-                        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                        textView.setTypeface(AndroidUtilities.bold());
                         textView.setText(button.text.toUpperCase());
                         textView.setTag(button);
                         textView.setGravity(Gravity.CENTER);
@@ -1341,7 +1342,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             nameTextView.setText(UserObject.getUserName(currentUser));
         }
         if (currentUser != null && currentUser.id == 777000) {
-            onlineTextView.setText(LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications));
+            onlineTextView.setText(LocaleController.getString(R.string.ServiceNotifications));
         } else {
             CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0, false);
             if (printString == null || printString.length() == 0) {

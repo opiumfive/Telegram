@@ -33,7 +33,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatDelegate;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -166,7 +165,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         });
         nameTextView.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
         nameTextView.setTextSize(15);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         nameTextView.setEllipsizeByGradient(true);
         nameTextView.setRightDrawableOutside(true);
@@ -203,9 +202,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
                 if (Theme.isCurrentThemeDark()) {
-                    info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));
+                    info.setText(LocaleController.getString(R.string.AccDescrSwitchToDayTheme));
                 } else {
-                    info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
+                    info.setText(LocaleController.getString(R.string.AccDescrSwitchToNightTheme));
                 }
             }
         };
@@ -749,7 +748,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             arrowView.animate().cancel();
             arrowView.setRotation(rotation);
         }
-        arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+        arrowView.setContentDescription(accountsShown ? LocaleController.getString(R.string.AccDescrHideAccounts) : LocaleController.getString(R.string.AccDescrShowAccounts));
     }
 
     @Override

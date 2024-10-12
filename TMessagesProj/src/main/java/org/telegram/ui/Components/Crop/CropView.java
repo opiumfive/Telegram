@@ -432,10 +432,12 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
     public void reset(boolean force) {
         areaView.resetAnimator();
-        areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), state.getBaseRotation() % 180 != 0, freeform);
+        areaView.setBitmap(getCurrentWidth(), getCurrentHeight(), state != null && state.getBaseRotation() % 180 != 0, freeform);
         areaView.setLockedAspectRatio(freeform ? 0.0f : 1.0f);
-        state.reset(areaView, 0, freeform);
-        state.mirrored = false;
+        if (state != null) {
+            state.reset(areaView, 0, freeform);
+            state.mirrored = false;
+        }
         areaView.getCropRect(initialAreaRect);
         updateMatrix(force);
 
@@ -1233,8 +1235,8 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
                 new Integer[]{16, 9}
         };
 
-        actions[0] = LocaleController.getString("CropOriginal", R.string.CropOriginal);
-        actions[1] = LocaleController.getString("CropSquare", R.string.CropSquare);
+        actions[0] = LocaleController.getString(R.string.CropOriginal);
+        actions[1] = LocaleController.getString(R.string.CropSquare);
 
         int i = 2;
         for (Integer[] ratioPair : ratios) {

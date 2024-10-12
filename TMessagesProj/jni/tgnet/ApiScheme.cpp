@@ -528,6 +528,9 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         profile_color_color = stream->readInt32(&error);
         profile_color_background_emoji_id = stream->readInt64(&error);
     }
+    if ((flags2 & 4096) != 0) {
+        bot_active_users = stream->readInt32(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
@@ -604,6 +607,9 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(0xba278146);
         stream->writeInt32(profile_color_color);
         stream->writeInt32(profile_color_background_emoji_id);
+    }
+    if ((flags2 & 4096) != 0) {
+        stream->writeInt32(bot_active_users);
     }
 }
 
@@ -810,6 +816,9 @@ MessageEntity *MessageEntity::TLdeserialize(NativeByteBuffer *stream, uint32_t c
             result = new TL_messageEntityStrike();
             break;
         case 0x20df5d0:
+            result = new TL_messageEntityBlockquote_layer180();
+            break;
+        case 0xf1ccaaac:
             result = new TL_messageEntityBlockquote();
             break;
         case 0x9c4e7e8b:
@@ -1001,11 +1010,24 @@ void TL_messageEntityStrike::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_messageEntityBlockquote::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    offset = stream->readInt32(&error);
+    length = stream->readInt32(&error);
+}
+
+void TL_messageEntityBlockquote_layer180::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     offset = stream->readInt32(&error);
     length = stream->readInt32(&error);
 }
 
 void TL_messageEntityBlockquote::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    stream->writeInt32(offset);
+    stream->writeInt32(length);
+}
+
+void TL_messageEntityBlockquote_layer180::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(offset);
     stream->writeInt32(length);

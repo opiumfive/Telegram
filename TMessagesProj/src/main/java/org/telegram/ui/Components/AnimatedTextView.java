@@ -18,6 +18,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -118,9 +119,9 @@ public class AnimatedTextView extends View {
         private boolean toSetTextMoveDown;
 
         private long animateDelay = 0;
-        private long animateDuration = 450;
+        private long animateDuration = 320;
         private TimeInterpolator animateInterpolator = CubicBezierInterpolator.EASE_OUT_QUINT;
-        private float moveAmplitude = 1f;
+        private float moveAmplitude = .3f;
 
         private float scaleAmplitude = 0;
 
@@ -151,6 +152,8 @@ public class AnimatedTextView extends View {
         private LinearGradient ellipsizeGradient;
         private Matrix ellipsizeGradientMatrix;
         private Paint ellipsizePaint;
+
+        private boolean includeFontPadding = true;
 
         public AnimatedTextDrawable() {
             this(false, false, false);
@@ -317,6 +320,10 @@ public class AnimatedTextView extends View {
         public void setRightPadding(float rightPadding) {
             this.rightPadding = rightPadding;
             invalidateSelf();
+        }
+
+        public float getRightPadding() {
+            return this.rightPadding;
         }
 
         public void cancelAnimation() {
@@ -551,6 +558,7 @@ public class AnimatedTextView extends View {
                         .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                         .setEllipsize(TextUtils.TruncateAt.END)
                         .setEllipsizedWidth(width)
+                        .setIncludePad(includeFontPadding)
                         .build();
             } else {
                 return new StaticLayout(
@@ -561,7 +569,7 @@ public class AnimatedTextView extends View {
                     Layout.Alignment.ALIGN_NORMAL,
                     1,
                     0,
-                    false,
+                    includeFontPadding,
                     TextUtils.TruncateAt.END,
                     width
                 );
@@ -1048,10 +1056,19 @@ public class AnimatedTextView extends View {
             this.bounds.set(bounds);
         }
 
+        public void setBounds(@NonNull RectF bounds) {
+            setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+        }
+
         @Override
         public void setBounds(int left, int top, int right, int bottom) {
             super.setBounds(left, top, right, bottom);
             this.bounds.set(left, top, right, bottom);
+        }
+
+        public void setBounds(float left, float top, float right, float bottom) {
+            super.setBounds((int) left, (int) top, (int) right, (int) bottom);
+            this.bounds.set((int) left, (int) top, (int) right, (int) bottom);
         }
 
         @NonNull
@@ -1071,6 +1088,10 @@ public class AnimatedTextView extends View {
         private Runnable widthUpdatedListener;
         public void setOnWidthUpdatedListener(Runnable listener) {
             widthUpdatedListener = listener;
+        }
+
+        public void setIncludeFontPadding(boolean includeFontPadding) {
+            this.includeFontPadding = includeFontPadding;
         }
     }
 
@@ -1112,7 +1133,7 @@ public class AnimatedTextView extends View {
         }
         if (lastMaxWidth != width && getLayoutParams().width != 0) {
             drawable.setBounds(getPaddingLeft(), getPaddingTop(), width - getPaddingRight(), height - getPaddingBottom());
-            setText(drawable.getText(), false);
+            drawable.setText(drawable.getText(), false, true);
         }
         lastMaxWidth = width;
         if (adaptWidth && MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
@@ -1263,8 +1284,16 @@ public class AnimatedTextView extends View {
         drawable.setRightPadding(rightPadding);
     }
 
+    public float getRightPadding() {
+        return drawable.getRightPadding();
+    }
+
     private Runnable widthUpdatedListener;
     public void setOnWidthUpdatedListener(Runnable listener) {
         drawable.setOnWidthUpdatedListener(listener);
+    }
+
+    public void setIncludeFontPadding(boolean includeFontPadding) {
+        this.drawable.setIncludeFontPadding(includeFontPadding);
     }
 }

@@ -760,6 +760,7 @@ public class SecretChatHelper extends BaseController {
                             AndroidUtilities.runOnUIThread(() -> {
                                 newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                 getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, false);
+                                getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, false);
                                 getSendMessagesHelper().processSentMessage(newMsgObj.id);
                                 getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id, false);
                             });
@@ -959,7 +960,7 @@ public class SecretChatHelper extends BaseController {
                     }
                     newMessage.media.document.thumbs.add(photoSize);
                     newMessage.media.document.flags |= 1;
-                    TLRPC.TL_documentAttributeVideo attributeVideo = new TLRPC.TL_documentAttributeVideo();
+                    TLRPC.TL_documentAttributeVideo_layer159 attributeVideo = new TLRPC.TL_documentAttributeVideo_layer159();
                     attributeVideo.w = decryptedMessage.media.w;
                     attributeVideo.h = decryptedMessage.media.h;
                     attributeVideo.duration = decryptedMessage.media.duration;
@@ -2009,9 +2010,9 @@ public class SecretChatHelper extends BaseController {
                                     FileLog.e(e);
                                 }
                                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                builder.setMessage(LocaleController.getString("CreateEncryptedChatError", R.string.CreateEncryptedChatError));
-                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                builder.setTitle(LocaleController.getString(R.string.AppName));
+                                builder.setMessage(LocaleController.getString(R.string.CreateEncryptedChatError));
+                                builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
                                 builder.show().setCanceledOnTouchOutside(true);
                             }
                         });
