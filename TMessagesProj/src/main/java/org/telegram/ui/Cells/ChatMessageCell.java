@@ -558,6 +558,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressSideButton(ChatMessageCell cell) {
         }
 
+        default boolean isSideButtonHidden(ChatMessageCell cell) {
+            return false;
+        }
+
+        default void didLongPressSideButtonRelease(ChatMessageCell cell) {
+        }
+
+        default void didLongPressSideButtonMove(ChatMessageCell cell, float x, float y) {
+        }
+
+        default void didLongPressSideButton(ChatMessageCell cell, float x, float y) {
+        }
+
         default void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
         }
 
@@ -4003,8 +4016,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             psaHintPressed = false;
             linkPreviewPressed = false;
             otherPressed = false;
-            sideButtonPressed = false;
-            pressedSideButton = 0;
+            if (!hadSideButtonLongPress) {
+                //sideButtonPressed = false;
+                //pressedSideButton = 0;
+            }
             imagePressed = false;
             timePressed = false;
             gamePreviewPressed = false;
@@ -4105,6 +4120,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 pressedSideButton = drawSideButton;
                             }
                             sideButtonPressed = true;
+                            if (drawSideButton == 1) {
+                                startCheckLongPress();
+                            }
                         }
                         result = true;
                         invalidate();
@@ -4323,23 +4341,43 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else if (sideButtonPressed) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         playSoundEffect(SoundEffectConstants.CLICK);
-                        if (delegate != null) {
-                            if (pressedSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
-                                delegate.didPressSponsoredClose(this);
-                            } else if (pressedSideButton == SIDE_BUTTON_SPONSORED_MORE) {
-                                delegate.didPressSponsoredInfo(this, x, y);
-                            } else if (pressedSideButton == 3) {
-                                delegate.didPressCommentButton(this);
-                            } else {
-                                delegate.didPressSideButton(this);
+                        if (hadSideButtonLongPress && drawSideButton == 1) {
+                            hadSideButtonLongPress = false;
+                            if (delegate != null) {
+                                delegate.didLongPressSideButtonRelease(this);
+                            }
+                        } else {
+                            if (delegate != null) {
+                                if (pressedSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
+                                    delegate.didPressSponsoredClose(this);
+                                } else if (pressedSideButton == SIDE_BUTTON_SPONSORED_MORE) {
+                                    delegate.didPressSponsoredInfo(this, x, y);
+                                } else if (pressedSideButton == 3) {
+                                    delegate.didPressCommentButton(this);
+                                } else {
+                                    delegate.didPressSideButton(this);
+                                }
                             }
                         }
+
                         sideButtonPressed = false;
                         pressedSideButton = 0;
                     } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                        sideButtonPressed = false;
-                        pressedSideButton = 0;
+                        if (hadSideButtonLongPress) {
+                            //hadSideButtonLongPress = false;
+                            //if (delegate != null) {
+                            //    delegate.didLongPressSideButtonRelease(this);
+                            //}
+                        }
+                        //sideButtonPressed = false;
+                        //pressedSideButton = 0;
                     } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                        if (hadSideButtonLongPress && drawSideButton == 1) {
+                            if (delegate != null) {
+                                delegate.didLongPressSideButtonMove(this, x, y);
+                            }
+                            return result;
+                        }
                         if (!(
                             sideButtonVisible &&
                             x >= sideStartX - dp(24) && x <= sideStartX + dp(40) &&
@@ -9880,6 +9918,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private boolean hadSideButtonLongPress = false;
     private boolean hadLongPress = false;
 
     private static boolean spanSupportsLongPress(CharacterStyle span) {
@@ -9979,6 +10018,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 //                return true;
 //            }
             pressedEmoji = null;
+        }
+        if (sideButtonPressed && drawSideButton == 1) {
+            hadSideButtonLongPress = true;
+            delegate.didLongPressSideButton(this, sideStartX, sideStartY);
+            return true;
         }
         if (pressedFactCheckLink != null) {
             if (pressedFactCheckLink.getSpan() instanceof URLSpanMono) {
@@ -18264,6 +18308,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void drawSideButton(Canvas canvas) {
+        if (delegate != null && delegate.isSideButtonHidden(this)) return;
         if (drawSideButton != 0) {
             if (currentPosition != null && currentMessagesGroup != null && currentMessagesGroup.isDocuments && !currentPosition.last) {
                 return;
@@ -18364,11 +18409,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         canvas.drawPath(sideButtonPath2, getThemedPaint(Theme.key_paint_chatActionBackgroundSelected));
                     }
                 } else {
-                    canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), getThemedPaint(sideButtonPressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
+                    canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), getThemedPaint(Theme.key_paint_chatActionBackground));
                 }
                 if (hasGradientService()) {
                     canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), Theme.chat_actionBackgroundGradientDarkenPaint);
                 }
+
+
 
                 if (drawSideButton == 2) {
                     Drawable goIconDrawable = getThemedDrawable(Theme.key_drawable_goIcon);

@@ -219,6 +219,10 @@ public class LinkActionView extends LinearLayout {
         });
 
         optionsView.setOnClickListener(view -> {
+            if (onlyQrInMenu()) {
+                showQrCode();
+                return;
+            }
             if (actionBarPopupWindow != null) {
                 return;
             }
@@ -350,6 +354,19 @@ public class LinkActionView extends LinearLayout {
             }
         });
         updateColors();
+        checkRightIcon();
+    }
+
+    private boolean onlyQrInMenu() {
+        return hideRevokeOption && !(canEdit && !this.permanent);
+    }
+
+    private void checkRightIcon() {
+        if (onlyQrInMenu()) {
+            optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.msg_qrcode));
+        } else {
+            optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.ic_ab_other));
+        }
     }
 
     public void showBulletin(int resId, CharSequence str) {
@@ -456,7 +473,7 @@ public class LinkActionView extends LinearLayout {
         if (hideRevokeOption != b) {
             hideRevokeOption = b;
             optionsView.setVisibility(View.VISIBLE);
-            optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.ic_ab_other));
+            checkRightIcon();
         }
     }
 

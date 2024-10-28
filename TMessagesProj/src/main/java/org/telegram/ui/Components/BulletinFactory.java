@@ -994,6 +994,14 @@ public final class BulletinFactory {
     }
 
     @CheckResult
+    public static Bulletin createReminderHintBulletIn(BaseFragment fragment, Theme.ResourcesProvider resourcesProvider) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity(), resourcesProvider);
+        layout.setAnimation(R.raw.silent_unmute, "Envelope", "Cover", "Bucket");
+        layout.textView.setText(LocaleController.getString(R.string.NotifyReminderHint));
+        return Bulletin.make(fragment, layout, Bulletin.DURATION_LONG);
+    }
+
+    @CheckResult
     public static Bulletin createUnpinAllMessagesBulletin(BaseFragment fragment, int count, boolean hide, Runnable undoAction, Runnable delayedAction, Theme.ResourcesProvider resourcesProvider) {
         if (fragment.getParentActivity() == null) {
             if (delayedAction != null) {

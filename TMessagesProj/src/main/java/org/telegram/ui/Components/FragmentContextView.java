@@ -736,7 +736,20 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (call == null) {
                     return;
                 }
-                VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                if (call.call.schedule_start_subscribed || ChatObject.canManageCalls(chatActivity.getCurrentChat())) {
+                    VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                } else {
+                    TLRPC.TL_phone_toggleGroupCallStartSubscription req = new TLRPC.TL_phone_toggleGroupCallStartSubscription();
+                    req.call = call.getInputGroupCall();
+                    call.call.schedule_start_subscribed = true;
+                    req.subscribed = call.call.schedule_start_subscribed;
+                    fragment.getConnectionsManager().sendRequest(req, (response, error) -> {
+                        if (response != null) {
+                            fragment.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                            chatActivity.showReminderHint();
+                        }
+                    });
+                }
             } else if (currentStyle == STYLE_IMPORTING_MESSAGES) {
                 SendMessagesHelper.ImportingHistory importingHistory = fragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) fragment).getDialogId());
                 if (importingHistory == null) {
@@ -1321,10 +1334,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 muteButton.invalidate();
             }
         } else if (currentStyle == STYLE_INACTIVE_GROUP_CALL) {
-            if (!scheduleRunnableScheduled) {
-                scheduleRunnableScheduled = true;
-                updateScheduleTimeRunnable.run();
-            }
+            manageNotifyButton();
         }
 
         if (visible && topPadding == 0) {
@@ -2114,10 +2124,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         }
                     }
                     subtitleTextView.setText(LocaleController.formatStartsTime(call.call.schedule_date, 4), false);
-                    if (!scheduleRunnableScheduled) {
-                        scheduleRunnableScheduled = true;
-                        updateScheduleTimeRunnable.run();
-                    }
+
+                    manageNotifyButton();
                 } else {
                     timeLayout = null;
                     joinButton.setVisibility(VISIBLE);
@@ -2195,6 +2203,25 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 visible = true;
                 setVisibility(VISIBLE);
             }
+        }
+    }
+
+    private void manageNotifyButton() {
+        ChatObject.Call call = chatActivity.getGroupCall();
+        if (call == null) return;
+        boolean reminder = call.call.schedule_start_subscribed;
+        if (reminder || ChatObject.canManageCalls(chatActivity.getCurrentChat())) {
+            if (!scheduleRunnableScheduled) {
+                scheduleRunnableScheduled = true;
+                updateScheduleTimeRunnable.run();
+            }
+        } else {
+            AndroidUtilities.cancelRunOnUIThread(updateScheduleTimeRunnable);
+            scheduleRunnableScheduled = false;
+            String str = LocaleController.getString(R.string.NotifyMe);
+            int width = (int) Math.ceil(gradientTextPaint.measureText(str));
+            timeLayout = new StaticLayout(str, gradientTextPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            frameLayout.invalidate();
         }
     }
 

@@ -408,6 +408,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private HintView2 groupEmojiPackHint;
     private HintView2 botMessageHint;
     private HintView2 factCheckHint;
+    private HintView2 botButtonTooltip;
 
     private int reactionsMentionCount;
     private FrameLayout reactionsMentiondownButton;
@@ -936,6 +937,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private ChatMessageCell dummyMessageCell;
     private FireworksOverlay fireworksOverlay;
+    private QuickShareView quickShareView;
 
     private boolean swipeBackEnabled = true;
 
@@ -4221,6 +4223,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent e) {
+                if (isTouchBlockedByQuickShare()) {
+                    return false;
+                }
                 textSelectionHelper.checkSelectionCancel(e);
                 if (isFastScrollAnimationRunning()) {
                     return false;
@@ -7969,6 +7974,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (getParentActivity() == null || pullingDownOffset != 0) {
                 return;
             }
+            if (botButtonTooltip != null && botButtonTooltip.shown()) {
+                botButtonTooltip.hide();
+            }
             if (chatMode == MODE_SAVED) {
                 Bundle args = new Bundle();
                 long dialogId = getSavedDialogId();
@@ -8211,6 +8219,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         contentView.addView(hashtagHistoryView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 40, 0, 0));
 
         contentView.addView(fireworksOverlay = new FireworksOverlay(context), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        contentView.addView(quickShareView = new QuickShareView(context), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         checkInstantSearch();
         if (replyingMessageObject != null) {
@@ -8509,6 +8518,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.hideHints();
+        }
+        if (botButtonTooltip != null && botButtonTooltip.shown()) {
+            botButtonTooltip.hide();
         }
     }
 
@@ -12214,6 +12226,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (checksHintView != null) {
             checksHintView.hide();
+        }
+        if (botButtonTooltip != null && botButtonTooltip.shown()) {
+            botButtonTooltip.hide();
         }
     }
 
@@ -25005,6 +25020,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    private void checkBotStartTooltip() {
+        // todo Note: commented for better testing
+        //if (MessagesController.getGlobalMainSettings().getInt("botbuttonhint", 0) > 0) return;
+        if (currentUser != null && currentUser.bot && !sentBotStart && !UserObject.isReplyUser(currentUser) && !UserObject.isDeleted(currentUser) && botUser != null && getSavedDialogId() != getUserConfig().getClientUserId() && !isInScheduleMode() && !isReport() && chatMode != MODE_PINNED && chatMode != MODE_SAVED) {
+            if (botButtonTooltip == null) {
+                botButtonTooltip = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+                BouncingArrowsDrawable icon = new BouncingArrowsDrawable();
+                icon.start();
+                botButtonTooltip.setIcon(icon);
+                botButtonTooltip.setBounce(true);
+
+                botButtonTooltip.setBgColor(ColorUtils.setAlphaComponent(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.13f), 195));
+                botButtonTooltip.setText(LocaleController.getString(R.string.BotStartHintTitle));
+                botButtonTooltip.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
+                contentView.addView(botButtonTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, userBlocked ? 54 : 74));
+
+                MessagesController.getGlobalMainSettings().edit().putInt("botbuttonhint", 1).apply();
+                AndroidUtilities.runOnUIThread(() -> botButtonTooltip.show(), 250);
+            }
+        }
+    }
+
     private void updateBottomOverlay() {
         if (bottomOverlayChatText == null || chatMode == MODE_SCHEDULED || getContext() == null) {
             return;
@@ -25343,6 +25380,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     bottomOverlayChat.setVisibility(View.INVISIBLE);
                     chatActivityEnterView.setVisibility(View.VISIBLE);
                 }
+                checkBotStartTooltip();
             }
             if (topViewWasVisible == 1) {
                 chatActivityEnterView.showTopView(false, false);
@@ -33322,7 +33360,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatMode == MODE_QUICK_REPLIES && (messages.isEmpty() || threadMessageId == 0)) {
             return false;
         }
-        return swipeBackEnabled && chatActivityEnterView.swipeToBackEnabled() && pullingDownOffset == 0;
+        return swipeBackEnabled && !isTouchBlockedByQuickShare() && chatActivityEnterView.swipeToBackEnabled() && pullingDownOffset == 0;
     }
 
     @Override
@@ -33330,7 +33368,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatMode == MODE_QUICK_REPLIES && (messages.isEmpty() || threadMessageId == 0)) {
             return false;
         }
-        return swipeBackEnabled && (forwardingPreviewView == null || !forwardingPreviewView.isShowing());
+        return swipeBackEnabled && !isTouchBlockedByQuickShare() && (forwardingPreviewView == null || !forwardingPreviewView.isShowing());
+    }
+
+    public boolean isTouchBlockedByQuickShare() {
+        return (quickShareView != null && quickShareView.blockTouches());
     }
 
     public class ChatActivityAdapter extends RecyclerAnimationScrollHelper.AnimatableAdapter {
@@ -35778,6 +35820,107 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         @Override
+        public void didLongPressSideButtonMove(ChatMessageCell cell, float x, float y) {
+            quickShareView.onMove(x, y);
+        }
+
+        @Override
+        public void didLongPressSideButtonRelease(ChatMessageCell cell) {
+            quickShareView.release();
+        }
+
+        @Override
+        public boolean isSideButtonHidden(ChatMessageCell cell) {
+            return quickShareView.sideButtonHidden(cell);
+        }
+
+        @Override
+        public void didLongPressSideButton(ChatMessageCell cell, float x, float y) {
+            AndroidUtilities.makeGlobalBlurBitmap(bitmap -> quickShareView.setBlurredChat(bitmap), 12);
+            int[] cords = new int[2];
+            actionBar.getLocationOnScreen(cords);
+            final int actionBarTop = cords[1];
+            final int actionBatBottom = actionBarTop + actionBar.getMeasuredHeight();
+            chatListView.getLocationOnScreen(cords);
+            final int keyboardCompensation = actionBatBottom - cords[1];
+            final int yy = (int) cell.getY() - keyboardCompensation;
+
+            ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
+            dialogs.clear();
+
+            long selfUserId = UserConfig.getInstance(currentAccount).clientUserId;
+            //if (includeStory) {
+            //    ShareAlert.ShareDialogsAdapter.MyStoryDialog d = new ShareAlert.ShareDialogsAdapter.MyStoryDialog();
+            //    dialogs.add(d);
+            //}
+            if (!MessagesController.getInstance(currentAccount).dialogsForward.isEmpty()) {
+                TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogsForward.get(0);
+                dialogs.add(dialog);
+            }
+            ArrayList<TLRPC.Dialog> archivedDialogs = new ArrayList<>();
+            ArrayList<TLRPC.Dialog> allDialogs = MessagesController.getInstance(currentAccount).getAllDialogs();
+            for (int a = 0; a < allDialogs.size(); a++) {
+                TLRPC.Dialog dialog = allDialogs.get(a);
+                if (!(dialog instanceof TLRPC.TL_dialog)) {
+                    continue;
+                }
+                if (dialog.id == selfUserId) {
+                    continue;
+                }
+                if (!DialogObject.isEncryptedDialog(dialog.id)) {
+                    if (DialogObject.isUserDialog(dialog.id)) {
+                        if (dialog.folder_id == 1) {
+                            archivedDialogs.add(dialog);
+                        } else {
+                            dialogs.add(dialog);
+                        }
+                    } else {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
+                        if (!(chat == null || ChatObject.isNotInChat(chat) || chat.gigagroup && !ChatObject.hasAdminRights(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
+                            if (dialog.folder_id == 1) {
+                                archivedDialogs.add(dialog);
+                            } else {
+                                dialogs.add(dialog);
+                            }
+                        }
+                    }
+                }
+            }
+            dialogs.addAll(archivedDialogs);
+
+            try {
+                List<TLRPC.Dialog> sublist = new ArrayList<>(dialogs.subList(0, Math.min(5, dialogs.size())));
+                if (!sublist.isEmpty()) {
+                    if (themeDelegate != null ? themeDelegate.hasGradientService() : Theme.hasGradientService()) {
+                        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+                            int color = bitmap.getPixel((int) (chatListView.getX() + cell.getX() + x + AndroidUtilities.dp(2)), (int) (actionBatBottom + yy + y + AndroidUtilities.dp(16)));
+                            showQuickShareView(cell, sublist, chatListView.getX() + cell.getX() + x + AndroidUtilities.dp(16), yy + y + AndroidUtilities.dp(16), color, getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), actionBatBottom);
+                        }, 1f, 0, null, null);
+                    } else {
+                        int bgColor = getThemedColor(Theme.key_actionBarDefaultSubmenuBackground);
+                        int sideButtonColor = getThemedPaint(Theme.key_paint_chatActionBackground).getColor();
+                        showQuickShareView(cell, sublist, chatListView.getX() + cell.getX() + x + AndroidUtilities.dp(16), yy + y + AndroidUtilities.dp(16), sideButtonColor, bgColor, actionBatBottom);
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        private void showQuickShareView(ChatMessageCell cell, List<TLRPC.Dialog> sublist, float x, float y, int sideButtonColor, int bgColor, float actionBatBottom) {
+            quickShareView.showFrom(cell, sublist, x, y, sideButtonColor, bgColor, actionBatBottom, dialogChosen -> {
+                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(new ArrayList<MessageObject>() {{ add(cell.getMessageObject()); }}, dialogChosen.id, false,false, true, 0, null);
+                AlertsCreator.showSendMediaAlert(result, ChatActivity.this, null);
+                if (result == 0) {
+                    if (dialogChosen.id != getUserConfig().getClientUserId() || !BulletinFactory.of(ChatActivity.this).showForwardedBulletinWithTag(dialogChosen.id, 1)) {
+                        getUndoView().showWithAction(dialogChosen.id, UndoView.ACTION_FWD_MESSAGES, 0, null, null, null);
+                        return undoView;
+                    }
+                }
+                return null;
+            });
+        }
+
+        @Override
         public void didLongPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
             if (chatMode == MODE_QUICK_REPLIES) return;
             if (getParentActivity() == null || bottomOverlayChat.getVisibility() == View.VISIBLE &&
@@ -37515,6 +37658,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     public SimpleTextView getReplyObjectTextView() {
         return replyObjectTextView;
+    }
+
+    public void showReminderHint() {
+        contentView.postDelayed(() -> {
+            contentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        }, 150);
+        // todo NOTE: commented for better testing
+        //SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        //if (preferences.getBoolean("reminderhint", false)) {
+        //    return;
+        //}
+        //preferences.edit().putBoolean("reminderhint", true).commit();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
+                BulletinFactory.createReminderHintBulletIn(this, themeDelegate).show();
+            }
+        });
     }
 
     @Override

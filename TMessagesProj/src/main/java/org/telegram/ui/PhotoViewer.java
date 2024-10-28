@@ -133,6 +133,7 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+import androidx.mediarouter.app.MediaRouteButton;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerEnd;
@@ -142,6 +143,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
@@ -183,6 +185,7 @@ import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.WebFile;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.camera.Size;
+import org.telegram.messenger.utils.CastManager;
 import org.telegram.messenger.video.VideoPlayerRewinder;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -989,6 +992,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private int waitingForDraw;
     private TextureView changedTextureView;
     private ImageView textureImageView;
+    private MediaRouteButton[] chromecastImageView = new MediaRouteButton[3];
     private ImageView[] fullscreenButton = new ImageView[3];
     private boolean allowShowFullscreenButton;
     private int[] pipPosition = new int[2];
@@ -5688,6 +5692,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 toggleActionBar(false, false);
             });
+
+            chromecastImageView[a] = new MediaRouteButton(parentActivity);
+            chromecastImageView[a].setVisibility(View.INVISIBLE);
+            chromecastImageView[a].setAlpha(1.0f);
+            chromecastImageView[a].setRemoteIndicatorDrawable(Theme.getThemedDrawable(parentActivity, R.drawable.ic_cast_white_24dp, Color.WHITE));
+            containerView.addView(chromecastImageView[a], LayoutHelper.createFrame(24, 24));
+            CastButtonFactory.setUpMediaRouteButton(parentActivity, chromecastImageView[a]);
         }
 
         textSelectionHelper = new TextSelectionHelper.SimpleTextSelectionHelper(null, new DarkThemeResourceProvider()) {
@@ -9472,6 +9483,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
 
+            ApplicationLoader.castManager.postUri(uri, currentMessageObject != null ? currentMessageObject.getMimeType() : "video/mp4");
             videoPlayer.preparePlayer(uri, "other");
             videoPlayer.setPlayWhenReady(playWhenReady);
         }
@@ -9515,6 +9527,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (imagesArr.isEmpty()) {
             for (int b = 0; b < 3; b++) {
                 fullscreenButton[b].setVisibility(View.INVISIBLE);
+                chromecastImageView[b].setVisibility(View.INVISIBLE);
             }
             return;
         }
@@ -9527,11 +9540,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (index < 0 || index >= imagesArr.size()) {
                 fullscreenButton[b].setVisibility(View.INVISIBLE);
+                chromecastImageView[b].setVisibility(View.INVISIBLE);
                 continue;
             }
             MessageObject messageObject = imagesArr.get(index);
             if (!messageObject.isVideo() && !messageObject.isYouTubeVideo()) {
                 fullscreenButton[b].setVisibility(View.INVISIBLE);
+                chromecastImageView[b].setVisibility(View.INVISIBLE);
                 continue;
             }
             boolean isYouTube = messageObject.isYouTubeVideo() && currentMessageObject != null && currentMessageObject.getId() == messageObject.getId();
@@ -9552,16 +9567,26 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (fullscreenButton[b].getVisibility() != View.VISIBLE) {
                     fullscreenButton[b].setVisibility(View.VISIBLE);
                 }
+                if (chromecastImageView[b].getVisibility() != View.VISIBLE) {
+                    chromecastImageView[b].setVisibility(View.VISIBLE);
+                }
                 if (isActionBarVisible) {
                     fullscreenButton[b].setAlpha(1f);
+                    chromecastImageView[b].setAlpha(1f);
                 }
                 float scale = w / (float) containerView.getMeasuredWidth();
                 int height = (int) (h / scale);
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) fullscreenButton[b].getLayoutParams();
                 layoutParams.topMargin = (containerView.getMeasuredHeight() + height) / 2 - dp(48);
+
+                layoutParams = (FrameLayout.LayoutParams) chromecastImageView[b].getLayoutParams();
+                layoutParams.topMargin = (containerView.getMeasuredHeight() + height) / 2 - dp(36);
             } else {
                 if (fullscreenButton[b].getVisibility() != View.INVISIBLE) {
                     fullscreenButton[b].setVisibility(View.INVISIBLE);
+                }
+                if (chromecastImageView[b].getVisibility() != View.INVISIBLE) {
+                    chromecastImageView[b].setVisibility(View.INVISIBLE);
                 }
             }
 
@@ -9580,6 +9605,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 offsetX = currentTranslationX < minX ? (currentTranslationX - minX) : 0;
             }
             fullscreenButton[b].setTranslationX(offsetX + AndroidUtilities.displaySize.x - dp(48));
+            chromecastImageView[b].setTranslationX(offsetX + AndroidUtilities.dp(12));
         }
     }
 
@@ -11936,14 +11962,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (allowShowFullscreenButton) {
                 arrayList.add(ObjectAnimator.ofFloat(fullscreenButton[0], View.ALPHA, show ? 1.0f : 0.0f));
+                arrayList.add(ObjectAnimator.ofFloat(chromecastImageView[0], View.ALPHA, show ? 1.0f : 0.0f));
             }
             for (int a = 1; a < 3; a++) {
                 fullscreenButton[a].setTranslationY(show ? 0 : offsetY);
+                chromecastImageView[a].setTranslationY(show ? 0 : offsetY);
             }
             if (params.enableTranslationAnimation) {
                 arrayList.add(ObjectAnimator.ofFloat(fullscreenButton[0], View.TRANSLATION_Y, show ? 0 : offsetY));
+                arrayList.add(ObjectAnimator.ofFloat(chromecastImageView[0], View.TRANSLATION_Y, show ? 0 : offsetY));
             } else {
                 fullscreenButton[0].setTranslationY(0);
+                chromecastImageView[0].setTranslationY(0);
             }
             if (bottomLayout != null) {
                 arrayList.add(ObjectAnimator.ofFloat(bottomLayout, View.ALPHA, show ? 1.0f : 0.0f));
@@ -12027,8 +12057,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     fullscreenButton[0].setAlpha(show ? 1.0f : 0.0f);
                 }
             }
+            if (chromecastImageView[0].getTranslationX() != 0) {
+                chromecastImageView[0].setAlpha(show ? 1.0f : 0.0f);
+            }
             for (int a = 0; a < 3; a++) {
                 fullscreenButton[a].setTranslationY(show ? 0 : offsetY);
+                chromecastImageView[a].setTranslationY(show ? 0 : offsetY);
             }
             actionBar.setTranslationY(show ? 0 : -offsetY);
             if (countView != null) {
@@ -14292,6 +14326,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 fullscreenButton[2] = tmp;
                 fullscreenButton[0].setTranslationY(tmp.getTranslationY());
 
+                MediaRouteButton tmp2 = chromecastImageView[0];
+                chromecastImageView[0] = chromecastImageView[2];
+                chromecastImageView[2] = tmp2;
+                chromecastImageView[0].setTranslationY(tmp2.getTranslationY());
+
                 leftCropState = null;
                 setIndexToPaintingOverlay(currentIndex - 1, leftPaintingOverlay);
                 setIndexToPaintingOverlay(currentIndex, paintingOverlay);
@@ -14332,6 +14371,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 fullscreenButton[0] = fullscreenButton[1];
                 fullscreenButton[1] = tmp;
                 fullscreenButton[0].setTranslationY(tmp.getTranslationY());
+
+                MediaRouteButton tmp2 = chromecastImageView[0];
+                chromecastImageView[0] = chromecastImageView[1];
+                chromecastImageView[1] = tmp2;
+                chromecastImageView[0].setTranslationY(tmp2.getTranslationY());
 
                 rightCropState = null;
                 setIndexToPaintingOverlay(currentIndex - 1, leftPaintingOverlay);
@@ -14419,7 +14463,20 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                     fullscreenButton[0].animate().alpha(0).setListener(null).setDuration(150).start();
                                 }
 
+                                if (chromecastImageView[0].getTag() != null && ((Integer) chromecastImageView[0].getTag()) == 3 && enalrgeIconVisible) {
+                                    chromecastImageView[0].setTag(2);
+                                    chromecastImageView[0].animate().alpha(1).setDuration(150).setListener(new AnimatorListenerAdapter() {
+                                        @Override
+                                        public void onAnimationEnd(Animator animation) {
+                                            chromecastImageView[0].setTag(null);
+                                        }
+                                    }).start();
+                                } else if (chromecastImageView[0].getTag() == null && !enalrgeIconVisible) {
+                                    chromecastImageView[0].setTag(3);
+                                    chromecastImageView[0].animate().alpha(0).setListener(null).setDuration(150).start();
+                                }
                             }
+
                             photoProgressViews[0].setIndexedAlpha(2, buttonVisible ? 1f : 0f, true);
                         }
                     }
@@ -17739,6 +17796,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     fullscreenButton[0].setTag(1);
                     allowShowFullscreenButton = true;
                 }
+                if (!allowShowFullscreenButton && chromecastImageView[0].getTag() == null) {
+                    chromecastImageView[0].animate().alpha(1.0f).setDuration(120).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            chromecastImageView[0].setTag(null);
+                        }
+                    }).start();
+                    chromecastImageView[0].setTag(1);
+                    allowShowFullscreenButton = true;
+                }
             } else {
                 if (allowShowFullscreenButton) {
                     fullscreenButton[0].animate().alpha(0.0f).setDuration(120).setListener(new AnimatorListenerAdapter() {
@@ -17748,6 +17815,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     }).start();
                     fullscreenButton[0].setTag(1);
+                    chromecastImageView[0].animate().alpha(0.0f).setDuration(120).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            chromecastImageView[0].setTag(null);
+                        }
+                    }).start();
+                    chromecastImageView[0].setTag(1);
                     allowShowFullscreenButton = false;
                 }
             }
@@ -17790,6 +17864,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 offsetX = currentTranslationX < minX ? (currentTranslationX - minX) : 0;
             }
             fullscreenButton[a].setTranslationX(offsetX + containerView.getMeasuredWidth() - dp(48));
+            chromecastImageView[a].setTranslationX(offsetX + AndroidUtilities.dp(12));
         }
 
         if (sideImage == rightImage) {
@@ -17860,12 +17935,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (isActionBarVisible) {
                 fullscreenButton[1].setAlpha(alpha);
+                chromecastImageView[1].setAlpha(alpha);
             }
 
             canvas.restore();
         } else {
             if (isActionBarVisible) {
                 fullscreenButton[1].setAlpha(0.0f);
+                chromecastImageView[1].setAlpha(0.0f);
             }
         }
 
@@ -18263,11 +18340,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (isActionBarVisible) {
                 fullscreenButton[2].setAlpha(1.0f);
+                chromecastImageView[2].setAlpha(1.0f);
             }
             canvas.restore();
         } else {
             if (isActionBarVisible) {
                 fullscreenButton[2].setAlpha(0.0f);
+                chromecastImageView[2].setAlpha(0.0f);
             }
         }
 
@@ -18447,6 +18526,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (isActionBarVisible && allowShowFullscreenButton && fullscreenButton[0].getTag() == null) {
                 fullscreenButton[0].setAlpha(Math.min(fullscreenButton[0].getAlpha(), alpha));
+            }
+
+            if (isActionBarVisible && allowShowFullscreenButton && chromecastImageView[0].getTag() == null) {
+                chromecastImageView[0].setAlpha(Math.min(chromecastImageView[0].getAlpha(), alpha));
             }
 
             canvas.restore();

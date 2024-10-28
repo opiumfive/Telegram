@@ -52,4 +52,8 @@ public interface ChatActivityInterface {
     ActionBar getActionBar();
 
     Theme.ResourcesProvider getResourceProvider();
+
+    default void showReminderHint() {
+
+    }
 }
