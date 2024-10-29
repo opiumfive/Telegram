@@ -9493,7 +9493,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
 
-            ApplicationLoader.castManager.postUri(uri, currentMessageObject != null ? currentMessageObject.getMimeType() : "video/mp4");
+            try { ApplicationLoader.castManager.postUri(uri, currentMessageObject != null ? currentMessageObject.getMimeType() : "video/mp4"); } catch (Exception e) {}
             videoPlayer.preparePlayer(uri, "other");
             videoPlayer.setPlayWhenReady(playWhenReady);
         }
