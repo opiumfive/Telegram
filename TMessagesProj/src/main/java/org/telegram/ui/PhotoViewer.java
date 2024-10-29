@@ -818,6 +818,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private ActionBarMenuItem editItem;
     private ActionBarMenuItem pipItem;
     private ActionBarMenuItem masksItem;
+    private ActionBarMenuItem chromecastItem;
     private LinearLayout itemsLayout;
     ChooseSpeedLayout chooseSpeedLayout;
     private Map<View, Boolean> actionBarItemsVisibility = new HashMap<>(3);
@@ -992,7 +993,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private int waitingForDraw;
     private TextureView changedTextureView;
     private ImageView textureImageView;
-    private MediaRouteButton[] chromecastImageView = new MediaRouteButton[3];
+    private ChromecastView[] chromecastImageView = new ChromecastView[3];
+    private ChromecastView chromecastMenuView;
     private ImageView[] fullscreenButton = new ImageView[3];
     private boolean allowShowFullscreenButton;
     private int[] pipPosition = new int[2];
@@ -2006,6 +2008,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private final static int gallery_menu_translate = 21;
     private final static int gallery_menu_hide_translation = 22;
     private final static int gallery_menu_reply = 23;
+    private final static int gallery_menu_chromecast = 24;
 
     private final static int ads_sponsor_info = 101;
     private final static int ads_about = 102;
@@ -4920,6 +4923,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     closePhoto(false, false);
                     currentMessageObject = null;
+                } else if (id == gallery_menu_chromecast) {
+                    if (chromecastMenuView != null) {
+                        chromecastMenuView.performClick();
+                    }
                 } else if (id == gallery_menu_send) {
                     if (currentMessageObject == null || !(parentActivity instanceof LaunchActivity)) {
                         return;
@@ -5479,6 +5486,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         editItem.setContentDescription(getString("AccDescrPhotoEditor", R.string.AccDescrPhotoEditor));
         sendItem = menu.addItem(gallery_menu_send, R.drawable.msg_header_share);
         sendItem.setContentDescription(getString("Forward", R.string.Forward));
+        chromecastItem = menu.addItem(gallery_menu_chromecast, 0);
+        chromecastMenuView = new ChromecastView(activityContext, getThemedColor(Theme.key_actionBarDefaultIcon), false);
+        CastButtonFactory.setUpMediaRouteButton(activityContext, chromecastMenuView);
+        chromecastItem.addView(chromecastMenuView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         menuItem = menu.addItem(0, menuItemIcon = new OptionsSpeedIconDrawable());
         menuItem.setOnClickListener(v -> {
@@ -5693,10 +5704,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 toggleActionBar(false, false);
             });
 
-            chromecastImageView[a] = new MediaRouteButton(parentActivity);
+            chromecastImageView[a] = new ChromecastView(activityContext, getThemedColor(Theme.key_actionBarDefaultIcon), true);
             chromecastImageView[a].setVisibility(View.INVISIBLE);
             chromecastImageView[a].setAlpha(1.0f);
-            chromecastImageView[a].setRemoteIndicatorDrawable(Theme.getThemedDrawable(parentActivity, R.drawable.ic_cast_white_24dp, Color.WHITE));
             containerView.addView(chromecastImageView[a], LayoutHelper.createFrame(24, 24));
             CastButtonFactory.setUpMediaRouteButton(parentActivity, chromecastImageView[a]);
         }
@@ -14326,7 +14336,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 fullscreenButton[2] = tmp;
                 fullscreenButton[0].setTranslationY(tmp.getTranslationY());
 
-                MediaRouteButton tmp2 = chromecastImageView[0];
+                ChromecastView tmp2 = chromecastImageView[0];
                 chromecastImageView[0] = chromecastImageView[2];
                 chromecastImageView[2] = tmp2;
                 chromecastImageView[0].setTranslationY(tmp2.getTranslationY());
@@ -14372,7 +14382,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 fullscreenButton[1] = tmp;
                 fullscreenButton[0].setTranslationY(tmp.getTranslationY());
 
-                MediaRouteButton tmp2 = chromecastImageView[0];
+                ChromecastView tmp2 = chromecastImageView[0];
                 chromecastImageView[0] = chromecastImageView[1];
                 chromecastImageView[1] = tmp2;
                 chromecastImageView[0].setTranslationY(tmp2.getTranslationY());

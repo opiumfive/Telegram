@@ -35836,6 +35836,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void didLongPressSideButton(ChatMessageCell cell, float x, float y) {
+            try {
+                cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            } catch (Exception ignore) {}
             AndroidUtilities.makeGlobalBlurBitmap(bitmap -> quickShareView.setBlurredChat(bitmap), 12);
             int[] cords = new int[2];
             actionBar.getLocationOnScreen(cords);

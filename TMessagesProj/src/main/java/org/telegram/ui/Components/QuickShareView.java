@@ -28,7 +28,6 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -45,10 +44,11 @@ public class QuickShareView extends FrameLayout {
     private final float AVA_RADIUS = AndroidUtilities.dpf2(22);
     private final float AVA_BETWEEN = AndroidUtilities.dpf2(12);
 
-
     private final Interpolator circleUpInterpolator = new CubicBezierInterpolator(.21,.47,.45,.93);
     private final Interpolator circleDownInterpolator = new CubicBezierInterpolator(.53,.12,.45,.93);
     private final Interpolator circleStabInterpolator = new CubicBezierInterpolator(.17,.69,.7,.78);
+    private final Interpolator avatarChooseInterpolator = new CubicBezierInterpolator(.33,-0.52,.83,.67);
+    private final Interpolator avatarHoverInterpolator = new CubicBezierInterpolator(.21,.39,.79,1.62);
 
     private PointF fromPoint;
     private float showProgress = 0;
@@ -106,15 +106,12 @@ public class QuickShareView extends FrameLayout {
     public QuickShareView(Context context) {
         super(context);
         setWillNotDraw(false);
-        android.util.Log.d("wwttff", "device class " + SharedConfig.getDevicePerformanceClass());
-
         paint.setStyle(Paint.Style.FILL);
         paint3.setStyle(Paint.Style.FILL);
         shadowPaint.setShadowLayer(AndroidUtilities.dpf2(3), 0, 0, 0x1f000000);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(AndroidUtilities.dpf2(14));
         textPaint.setTypeface(AndroidUtilities.bold());
-
         drawable = ContextCompat.getDrawable(context, R.drawable.filled_button_share);
     }
 
@@ -164,6 +161,7 @@ public class QuickShareView extends FrameLayout {
                 }
             }
 
+            // side button Y control
             float circleY = fromPoint.y;
             if (showProgress <= 0.21f) {
                 circleY = AndroidUtilities.lerp(fromPoint.y, fromPoint.y - AndroidUtilities.dpf2(15), circleUpInterpolator.getInterpolation(showProgress / 0.21f));
@@ -172,7 +170,7 @@ public class QuickShareView extends FrameLayout {
             } else if (showProgress <= 0.8f) {
                 circleY = AndroidUtilities.lerp(fromPoint.y + AndroidUtilities.dpf2(2), fromPoint.y, circleStabInterpolator.getInterpolation((showProgress - 0.5f) / 0.3f));
             }
-
+            // popup Y and h control
             float rectY = fromPoint.y - AndroidUtilities.dpf2(62f);
             float rectHeight = POPUP_HEIGHT;
             if (showProgress < 0.32f) {
@@ -184,7 +182,7 @@ public class QuickShareView extends FrameLayout {
             } else if (showProgress < 0.8f) {
                 rectY = AndroidUtilities.lerp(fromPoint.y - AndroidUtilities.dpf2(60f), fromPoint.y - AndroidUtilities.dpf2(62f), circleStabInterpolator.getInterpolation((showProgress - 0.63f) / 0.17f)); // todo too fast
             }
-
+            // popup L R control
             float rectLeft;
             float rectRight;
             if (showProgress < 0.12f) {
@@ -201,7 +199,6 @@ public class QuickShareView extends FrameLayout {
                 rectLeft = AndroidUtilities.lerp(leftSideMax + AndroidUtilities.dpf2(2), leftSideMax, circleStabInterpolator.getInterpolation((showProgress - 0.7f) / 0.3f));
                 rectRight = AndroidUtilities.lerp(rightSideMax - AndroidUtilities.dpf2(2), rightSideMax, circleStabInterpolator.getInterpolation((showProgress - 0.7f) / 0.3f));
             }
-
             rect.set(rectLeft, rectY - rectHeight / 2f, rectRight, rectY + rectHeight / 2f);
 
             if (drawOnBitmapThisTime) {
@@ -209,12 +206,12 @@ public class QuickShareView extends FrameLayout {
             }
 
             if (!bitmapIsFull) {
-
+                // draw popup shadow
                 if (showProgress >= 0.28f) {
                     AndroidUtilities.rectTmp.set(rect.left, rect.top, rect.right, rect.bottom + 1);
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rectHeight / 2, rectHeight / 2, shadowPaint);
                 }
-
+                // prepare gradient shader paint for morph-like effect
                 float stopAt = 0.42f;
                 if (showProgress < stopAt) {
                     float progr = circleDownInterpolator.getInterpolation(1f - (stopAt - showProgress) / stopAt);
@@ -229,16 +226,18 @@ public class QuickShareView extends FrameLayout {
                     gradientPaint.setShader(shader);
                 }
 
+                // draw popup round rect
                 if (showProgress > 0f) {
                     AndroidUtilities.rectTmp.set(rect.left, rect.top, rect.right, rect.bottom + 1);
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rectHeight / 2, rectHeight / 2, showProgress > stopAt ? paint : gradientPaint);
                 }
 
+                // draw metaball-like bridge between side button and popup
                 if (!releasing && !releasingAlpha) {
                     float maxDistance = AndroidUtilities.dpf2(65);
                     float handle_len_rate = 5f;
                     float rad2 = rectHeight / 2f;
-                    if (!startJoiningRight) x1 = rectRight - rad2; // right
+                    if (!startJoiningRight) x1 = rectRight - rad2;
                     float y12 = rect.top + rad2;
                     if (!startJoiningLeft) x2 = rectLeft + rad2;
                     float d1 = getDistance(fromPoint.x, circleY, x1, y12);
@@ -312,8 +311,8 @@ public class QuickShareView extends FrameLayout {
                         canvas.drawPath(path, gradientPaint);
                     }
                 }
+                // draw jumping side button and rotating icon
                 boolean drawCircle = showProgress > 0f && showProgress < 1f;
-
                 if (drawCircle) {
                     canvas.drawCircle(fromPoint.x, circleY, RADIUS, showProgress > stopAt ? paint3 : gradientPaint);
                     final int scx = (int) (fromPoint.x), scy = (int) (circleY);
@@ -335,37 +334,31 @@ public class QuickShareView extends FrameLayout {
                     canvas.restore();
                 }
 
+                // draw dialogs avatars and captions above
                 int from = 0;
                 int to = 5;
                 float offsetAvaX = 0f;
-
                 if (count == 4) {
                     to = 4;
                     offsetAvaX = AVA_RADIUS + AVA_BETWEEN / 2f;
                 } else if (count == 3) {
                     offsetAvaX = AVA_RADIUS * 2f + AVA_BETWEEN / 2f + AndroidUtilities.dpf2(7f);
-                    //from = 1;
                     to = 3;
                 } else if (count == 2) {
                     offsetAvaX = AVA_RADIUS * 3f + AVA_BETWEEN + AndroidUtilities.dpf2(6f);
-                    //from = 1;
                     to = 2;
                 } else if (count == 1) {
                     offsetAvaX = AVA_RADIUS * 4f + AVA_BETWEEN * 2 + AndroidUtilities.dpf2(1f);
-                    //from = 2;
                     to = 1;
                 }
-
                 float avaFromLeft = rectLeft;
                 float avaToRight = rectRight;
                 float avaCenter = rectY;
-
                 if (drawOnBitmapThisTime) {
                     avaFromLeft = AndroidUtilities.dpf2(10f);
                     avaToRight = bitmap.getWidth() - AndroidUtilities.dp(10f);
                     avaCenter = bitmap.getHeight() / 2f;
                 }
-
                 int currentSelectedIndexLocal = startedSelecting ? 5 : -1;
                 if (currentTouchX >= rectLeft && currentTouchX < rectRight) {
                     currentSelectedIndexLocal = 0;
@@ -379,18 +372,16 @@ public class QuickShareView extends FrameLayout {
                     selectionStartTime = System.currentTimeMillis();
                     prevSelectedIndex = currentSelectedIndex;
                     currentSelectedIndex = currentSelectedIndexLocal;
-                    android.util.Log.d("wwttff", "prevSel = " + prevSelectedIndex + " cursel = " + currentSelectedIndex);
                 }
-
                 for (int i = from; i < to; i++) {
-
                     float selectedProgress = currentSelectedIndex == i ? Math.min(1f, (System.currentTimeMillis() - selectionStartTime) / 220f) :
                             prevSelectedIndex == i ? 1f - Math.min(1f, (System.currentTimeMillis() - selectionStartTime) / 220f) : 0f;
                     float selectedProgressAlpha = currentSelectedIndex == i ? Math.min(1f, (System.currentTimeMillis() - selectionStartTime) / 220f) :
                             prevSelectedIndex == i || prevSelectedIndex == -1 ? 1f - Math.min(1f, (System.currentTimeMillis() - selectionStartTime) / 220f) : 0f;
-
+                    float rad;
+                    float centerX;
                     if (i == 2) {
-                        float rad;
+                        centerX = offsetAvaX + avaFromLeft + rect.width() / 2f;
                         if (showProgress < 0.13f) {
                             rad = 0;
                         } else if (showProgress < 0.35f) {
@@ -398,66 +389,11 @@ public class QuickShareView extends FrameLayout {
                         } else if (showProgress < 0.7f) {
                             rad = AndroidUtilities.lerp(AVA_RADIUS + AndroidUtilities.dpf2(2), AVA_RADIUS, (showProgress - 0.35f) / 0.35f);
                         } else {
-                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), selectedProgress);
+                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), avatarHoverInterpolator.getInterpolation(selectedProgress));
                         }
-
-                        if (rad > 0) {
-
-                            float centerX = offsetAvaX + avaFromLeft + rect.width() / 2f;
-                            boolean hover = false;
-                            if (drawOnBitmapThisTime) {
-                                if (i == chosenIndex) {
-                                    hover = true;
-                                }
-                            } else {
-                                if (currentTouchX >= centerX - rad - AVA_BETWEEN / 2f && currentTouchX <= centerX + rad + AVA_BETWEEN / 2f) {
-                                    hover = true;
-                                }
-                            }
-
-                            if (hover && releasingAlpha) continue;
-
-                            if (avatars[i] != null) {
-                                avatars[i].setImageCoords((centerX - AVA_RADIUS), (avaCenter - AVA_RADIUS), AVA_RADIUS * 2f, AVA_RADIUS * 2f);
-                                canvas.save();
-                                canvas.saveLayerAlpha(centerX - rad, avaCenter - rad, centerX + rad, avaCenter + rad, startedSelecting ? AndroidUtilities.lerp(100, 255, selectedProgressAlpha) : 255, Canvas.ALL_SAVE_FLAG);
-                                canvas.scale(rad / AVA_RADIUS, rad / AVA_RADIUS, centerX, avaCenter);
-                                avatars[i].draw(canvas);
-                                canvas.restore();
-                                canvas.restore();
-                            }
-
-                            if (names[i] != null && (startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0) > 0) {
-                                float textX = centerX;
-                                float textW = textPaint.measureText(names[i]);
-                                float diff = getMeasuredWidth() - (textX + textW / 2f + AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX += diff;
-                                }
-                                diff = (textX - textW / 2f - AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX -= diff;
-                                }
-                                float textY = rectY - AndroidUtilities.dpf2(58);
-                                float radT = AndroidUtilities.dpf2(13);
-
-                                textPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                float scale = AndroidUtilities.lerp(0.8f, 1f, selectedProgress);
-                                canvas.scale(scale, scale, textX, textY + AndroidUtilities.dpf2(30));
-                                AndroidUtilities.rectTmp.set(textX - textW / 2f - AndroidUtilities.dpf2(13), actionBarBottom + textY - radT, textX + textW / 2f + AndroidUtilities.dpf2(13), actionBarBottom + textY + radT);
-                                scrimBlurBitmapPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                canvas.translate(0, -actionBarBottom);
-                                canvas.drawRoundRect(AndroidUtilities.rectTmp, radT, radT, scrimBlurBitmapPaint);
-                                canvas.restore();
-                                canvas.drawText(names[i], textX - textW / 2f, textY + AndroidUtilities.dpf2(5), textPaint);
-                                canvas.restore();
-                            }
-                        }
-                    }
-                    if (i == 1 || i == 3) {
-                        float rad;
+                    } else if (i == 1 || i == 3) {
+                        float offset = AVA_RADIUS * 2f + AVA_BETWEEN;
+                        centerX = (offsetAvaX + (avaFromLeft + avaToRight) / 2f + (i < 2 ? -offset : offset));
                         if (showProgress < 0.21f) {
                             rad = 0;
                         } else if (showProgress < 0.45f) {
@@ -465,67 +401,11 @@ public class QuickShareView extends FrameLayout {
                         } else if (showProgress < 0.8f) {
                             rad = AndroidUtilities.lerp(AVA_RADIUS + AndroidUtilities.dpf2(2), AVA_RADIUS, (showProgress - 0.45f) / 0.35f);
                         } else {
-                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), selectedProgress);
+                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), avatarHoverInterpolator.getInterpolation(selectedProgress));
                         }
-
-                        if (rad > 0) {
-                            float offset = AVA_RADIUS * 2f + AVA_BETWEEN;
-                            float centerX = (offsetAvaX + (avaFromLeft + avaToRight) / 2f + (i < 2 ? -offset : offset));
-
-                            boolean hover = false;
-                            if (drawOnBitmapThisTime) {
-                                if (i == chosenIndex) {
-                                    hover = true;
-                                }
-                            } else {
-                                if (currentTouchX >= centerX - rad - AVA_BETWEEN / 2f && currentTouchX <= centerX + rad + AVA_BETWEEN / 2f) {
-                                    hover = true;
-                                }
-                            }
-
-                            if (hover && releasingAlpha) continue;
-
-                            if (avatars[i] != null) {
-                                avatars[i].setImageCoords((centerX - AVA_RADIUS), (avaCenter - AVA_RADIUS), AVA_RADIUS * 2f, AVA_RADIUS * 2f);
-                                canvas.save();
-                                canvas.saveLayerAlpha(centerX - rad, avaCenter - rad, centerX + rad, avaCenter + rad, startedSelecting ? AndroidUtilities.lerp(100, 255, selectedProgressAlpha) : 255, Canvas.ALL_SAVE_FLAG);
-                                canvas.scale(rad / AVA_RADIUS, rad / AVA_RADIUS, centerX, avaCenter);
-                                avatars[i].draw(canvas);
-                                canvas.restore();
-                                canvas.restore();
-                            }
-
-                            if (names[i] != null && (startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0) > 0) {
-                                float textX = centerX;
-                                float textW = textPaint.measureText(names[i]);
-                                float diff = getMeasuredWidth() - (textX + textW / 2f + AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX += diff;
-                                }
-                                diff = (textX - textW / 2f - AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX -= diff;
-                                }
-                                float textY = rectY - AndroidUtilities.dpf2(58);
-                                float radT = AndroidUtilities.dpf2(13);
-
-                                textPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                float scale = AndroidUtilities.lerp(0.8f, 1f, selectedProgress);
-                                canvas.scale(scale, scale, textX, textY + AndroidUtilities.dpf2(30));
-                                AndroidUtilities.rectTmp.set(textX - textW / 2f - AndroidUtilities.dpf2(13), actionBarBottom + textY - radT, textX + textW / 2f + AndroidUtilities.dpf2(13), actionBarBottom + textY + radT);
-                                scrimBlurBitmapPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                canvas.translate(0, -actionBarBottom);
-                                canvas.drawRoundRect(AndroidUtilities.rectTmp, radT, radT, scrimBlurBitmapPaint);
-                                canvas.restore();
-                                canvas.drawText(names[i], textX - textW / 2f, textY + AndroidUtilities.dpf2(5), textPaint);
-                                canvas.restore();
-                            }
-                        }
-                    }
-                    if (i == 0 || i == 4) {
-                        float rad;
+                    } else {
+                        float offset = (AVA_RADIUS * 2f + AVA_BETWEEN) * 2f;
+                        centerX = offsetAvaX + (avaFromLeft + avaToRight) / 2f + (i < 2 ? -offset : offset);
                         if (showProgress < 0.28f) {
                             rad = 0;
                         } else if (showProgress < 0.5f) {
@@ -533,62 +413,53 @@ public class QuickShareView extends FrameLayout {
                         } else if (showProgress < 0.85f) {
                             rad = AndroidUtilities.lerp(AVA_RADIUS + AndroidUtilities.dpf2(2), AVA_RADIUS, (showProgress - 0.5f) / 0.35f);
                         } else {
-                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), selectedProgress);
+                            rad = AndroidUtilities.lerp(AVA_RADIUS, AVA_RADIUS + AndroidUtilities.dpf2(2), avatarHoverInterpolator.getInterpolation(selectedProgress));
                         }
+                    }
 
-                        if (rad > 0) {
-                            float offset = (AVA_RADIUS * 2f + AVA_BETWEEN) * 2f;
-                            float centerX = offsetAvaX + (avaFromLeft + avaToRight) / 2f + (i < 2 ? -offset : offset);
-                            boolean hover = false;
-                            if (drawOnBitmapThisTime) {
-                                if (i == chosenIndex) {
-                                    hover = true;
-                                }
-                            } else {
-                                if (currentTouchX >= centerX - rad - AVA_BETWEEN / 2f && currentTouchX <= centerX + rad + AVA_BETWEEN / 2f) {
-                                    hover = true;
-                                }
+                    if (rad > 0) {
+                        boolean hover = false;
+                        if (drawOnBitmapThisTime) {
+                            if (i == chosenIndex) hover = true;
+                        } else {
+                            if (currentTouchX >= centerX - rad - AVA_BETWEEN / 2f && currentTouchX <= centerX + rad + AVA_BETWEEN / 2f) hover = true;
+                        }
+                        if (hover && releasingAlpha) continue;
+                        if (avatars[i] != null) {
+                            avatars[i].setImageCoords((centerX - AVA_RADIUS), (avaCenter - AVA_RADIUS), AVA_RADIUS * 2f, AVA_RADIUS * 2f);
+                            canvas.save();
+                            canvas.saveLayerAlpha(centerX - rad, avaCenter - rad, centerX + rad, avaCenter + rad, startedSelecting ? AndroidUtilities.lerp(100, 255, selectedProgressAlpha) : 255, Canvas.ALL_SAVE_FLAG);
+                            canvas.scale(rad / AVA_RADIUS, rad / AVA_RADIUS, centerX, avaCenter);
+                            avatars[i].draw(canvas);
+                            canvas.restore();
+                            canvas.restore();
+                        }
+                        if (names[i] != null && (startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0) > 0) {
+                            float textX = centerX;
+                            float textW = textPaint.measureText(names[i]);
+                            float diff = getMeasuredWidth() - (textX + textW / 2f + AndroidUtilities.dpf2(20));
+                            if (diff < 0) {
+                                textX += diff;
                             }
-
-                            if (hover && releasingAlpha) continue;
-
-                            if (avatars[i] != null) {
-                                avatars[i].setImageCoords((centerX - AVA_RADIUS), (avaCenter - AVA_RADIUS), AVA_RADIUS * 2f, AVA_RADIUS * 2f);
-                                canvas.save();
-                                canvas.saveLayerAlpha(centerX - rad, avaCenter - rad, centerX + rad, avaCenter + rad, startedSelecting ? AndroidUtilities.lerp(100, 255, selectedProgressAlpha) : 255, Canvas.ALL_SAVE_FLAG);
-                                canvas.scale(rad / AVA_RADIUS, rad / AVA_RADIUS, centerX, avaCenter);
-                                avatars[i].draw(canvas);
-                                canvas.restore();
-                                canvas.restore();
+                            diff = (textX - textW / 2f - AndroidUtilities.dpf2(20));
+                            if (diff < 0) {
+                                textX -= diff;
                             }
+                            float textY = rectY - AndroidUtilities.dpf2(52);
+                            float radT = AndroidUtilities.dpf2(11.5f);
 
-                            if (names[i] != null && (startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0) > 0) {
-                                float textX = centerX;
-                                float textW = textPaint.measureText(names[i]);
-                                float diff = getMeasuredWidth() - (textX + textW / 2f + AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX += diff;
-                                }
-                                diff = (textX - textW / 2f - AndroidUtilities.dpf2(20));
-                                if (diff < 0) {
-                                    textX -= diff;
-                                }
-                                float textY = rectY - AndroidUtilities.dpf2(58);
-                                float radT = AndroidUtilities.dpf2(13);
-
-                                textPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                float scale = AndroidUtilities.lerp(0.8f, 1f, selectedProgress);
-                                canvas.scale(scale, scale, textX, textY + AndroidUtilities.dpf2(30));
-                                AndroidUtilities.rectTmp.set(textX - textW / 2f - AndroidUtilities.dpf2(13), actionBarBottom + textY - radT, textX + textW / 2f + AndroidUtilities.dpf2(13), actionBarBottom + textY + radT);
-                                scrimBlurBitmapPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
-                                canvas.save();
-                                canvas.translate(0, -actionBarBottom);
-                                canvas.drawRoundRect(AndroidUtilities.rectTmp, radT, radT, scrimBlurBitmapPaint);
-                                canvas.restore();
-                                canvas.drawText(names[i], textX - textW / 2f, textY + AndroidUtilities.dpf2(5), textPaint);
-                                canvas.restore();
-                            }
+                            textPaint.setAlpha(startedSelecting ? (int) (AndroidUtilities.lerp(0, 255, selectedProgress)) : 0);
+                            canvas.save();
+                            float scale = AndroidUtilities.lerp(0.8f, 1f, selectedProgress);
+                            canvas.scale(scale, scale, textX, textY + AndroidUtilities.dpf2(30));
+                            AndroidUtilities.rectTmp.set(textX - textW / 2f - AndroidUtilities.dpf2(9), actionBarBottom + textY - radT, textX + textW / 2f + AndroidUtilities.dpf2(9), actionBarBottom + textY + radT);
+                            scrimBlurBitmapPaint.setAlpha(startedSelecting ? AndroidUtilities.lerp(0, 255, selectedProgress) : 0);
+                            canvas.save();
+                            canvas.translate(0, -actionBarBottom);
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, radT, radT, scrimBlurBitmapPaint);
+                            canvas.restore();
+                            canvas.drawText(names[i], textX - textW / 2f, textY + AndroidUtilities.dpf2(5), textPaint);
+                            canvas.restore();
                         }
                     }
                 }
@@ -603,6 +474,7 @@ public class QuickShareView extends FrameLayout {
                 Utilities.stackBlurBitmap(bitmap, 2);
                 canv.drawBitmap(bitmap, rectLeft - AndroidUtilities.dpf2(10), rectY - rectHeight / 2f - AndroidUtilities.dpf2(10), bmpPaint);
             }
+            // draw choosing effect
             if (releasingAlpha) {
                 canvas.restore();
                 if (chosenIndex != -1) {
@@ -616,7 +488,8 @@ public class QuickShareView extends FrameLayout {
                     if (chosenIndex > 0) indexOffset += chosenIndex * (AVA_RADIUS * 2f + AVA_BETWEEN);
                     float centerX = rectLeft + AndroidUtilities.dpf2(9) + indexOffset;
                     float newX = AndroidUtilities.lerp(centerX, targetX, CubicBezierInterpolator.EASE_OUT.getInterpolation(showAlphaProgress));
-                    float newY = AndroidUtilities.lerp(rectY, targetY, CubicBezierInterpolator.EASE_IN.getInterpolation(showAlphaProgress));
+
+                    float newY = AndroidUtilities.lerp(rectY, targetY, avatarChooseInterpolator.getInterpolation(showAlphaProgress));
 
                     avatars[chosenIndex].setImageCoords((newX - AVA_RADIUS), (newY - AVA_RADIUS), AVA_RADIUS * 2f, AVA_RADIUS * 2f);
                     canv.save();
@@ -643,12 +516,14 @@ public class QuickShareView extends FrameLayout {
                 targetY = 0f;
             }
 
+            // update real side button visibility
             if (cell != null) cell.invalidateOutbounds();
         }
     }
 
     float disconnectProgress = 0f;
 
+    // metaball related functions
     private boolean getMetaBallSegment(Path path, float x1, float y1, float r1, float x2, float y2, float r2, boolean left, float v, float handle_len_rate, float maxDistance) {
         float d = getDistance(x1, y1, x2, y2);
 
@@ -722,6 +597,7 @@ public class QuickShareView extends FrameLayout {
         return true;
     }
 
+    // metaball related functions
     private float getDistance(float b10, float b11, float b20, float b21) {
         float x = b10 - b20;
         float y = b11 - b21;
@@ -729,35 +605,18 @@ public class QuickShareView extends FrameLayout {
         return (float) Math.sqrt(d);
     }
 
+    // metaball related functions
     private float getLength(float b0, float b1) {
         return (float) Math.sqrt(b0 * b0 + b1 * b1);
     }
 
+    // metaball related functions
     private float getVectorX(float radians, float length) {
-        float x = (float) (Math.cos(radians) * length);
         return (float) (Math.cos(radians) * length);
     }
 
     private float getVectorY(float radians, float length) {
-        float y = (float) (Math.sin(radians) * length);
         return (float) (Math.sin(radians) * length);
-    }
-
-    public void showFrom(int count, float x, float y) {
-        this.count = count;
-        fromPoint = new PointF(x, y);
-        showProgress = 0f;
-        v = 0.8f;
-        disconnected = false;
-        startPrLeft = 0f;
-        releasing = false;
-        releasingAlpha = false;
-        startPrRight = 0f;
-        lastRectHeight = 0f;
-        startJoiningRight = false;
-        startJoiningLeft = false;
-        startTime = System.currentTimeMillis();
-        invalidate();
     }
 
     public void showFrom(ChatMessageCell cell, List<TLRPC.Dialog> dialogs, float x, float y, int sideButtonColor, int popupColor, float actionBarBottom, Utilities.CallbackReturn<TLRPC.Dialog, UndoView> callback) {
@@ -899,6 +758,7 @@ public class QuickShareView extends FrameLayout {
     }
 
     public void setBlurredChat(Bitmap bitmap) {
+        // prepare blurred chat bitmap shader for captions background
         scrimBlurBitmap = bitmap;
 
         scrimBlurBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
