@@ -38,6 +38,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.json.JSONObject;
+import org.telegram.messenger.utils.CastManager;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -59,6 +60,7 @@ public class ApplicationLoader extends Application {
     public static volatile Context applicationContext;
     public static volatile NetworkInfo currentNetworkInfo;
     public static volatile Handler applicationHandler;
+    public static volatile CastManager castManager;
 
     private static ConnectivityManager connectivityManager;
     private static volatile boolean applicationInited = false;
@@ -297,6 +299,7 @@ public class ApplicationLoader extends Application {
         }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
+        castManager = new CastManager(applicationContext);
 
         AndroidUtilities.runOnUIThread(ApplicationLoader::startPushService);
 

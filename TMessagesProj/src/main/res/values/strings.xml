@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegram Fix</string>
+    <string name="AppNameBeta">Telegram Fix Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -3456,6 +3456,7 @@
     <string name="BotWebViewRequestWriteMessage">Allow this bot to send you messages?</string>
     <string name="BotMultiContactsSelectorLimit_one">You can select maximum %1$d user.</string>
     <string name="BotMultiContactsSelectorLimit_other">You can select maximum %1$d users.</string>
+    <string name="BotStartHintTitle">Tap here to use this bot</string>
     <!--button titles-->
     <string name="Done">Done</string>
     <string name="Open">Open</string>
@@ -7522,6 +7523,8 @@
     <string name="NotificationReactions">Reactions</string>
     <string name="NotificationReactionsMessages">Messages</string>
     <string name="NotificationReactionsStories">Stories</string>
+    <string name="NotifyMe">Notify me</string>
+    <string name="NotifyReminderHint">You will be notified when the live stream starts</string>
     <string name="NotifyMeAbout">Notify me about…</string>
     <string name="NotifyMeAboutPrivate">New Messages in Private Chats</string>
     <string name="NotifyMeAboutNewStories">New Stories</string>
@@ -8016,4 +8019,5 @@
     <string name="BoostReasonGiveaway">Giveaway</string>
     <string name="BoostDate">Date</string>
     <string name="BoostUntil">Until</string>
+    <string name="Chromecast">Chromecast</string>
 </resources>

@@ -5651,7 +5651,7 @@ public class AndroidUtilities {
                 }
                 canvas.restore();
             }
-            Utilities.stackBlurBitmap(bitmap, Math.max(amount, Math.max(w, h) / 180));
+            if (amount > 0) Utilities.stackBlurBitmap(bitmap, Math.max(amount, Math.max(w, h) / 180));
 //            AndroidUtilities.runOnUIThread(() -> {
                 onBitmapDone.run(bitmap);
 //            });
