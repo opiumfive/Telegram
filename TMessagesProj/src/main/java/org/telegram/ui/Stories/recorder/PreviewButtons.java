@@ -1,17 +1,20 @@
 package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -34,8 +37,10 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 
 import java.util.ArrayList;
 
@@ -46,17 +51,28 @@ public class PreviewButtons extends FrameLayout {
     public static final int BUTTON_STICKER = 2;
     public static final int BUTTON_ADJUST = 3;
     public static final int BUTTON_SHARE = 4;
+    public static final int BUTTON_SEND = 5;
+    public static final int BUTTON_CROP = 6;
 
     private View shadowView;
 
     private ArrayList<ButtonView> buttons = new ArrayList<>();
     public ShareButtonView shareButton;
+    public ImageView pickerViewSendButton;
 
     private String shareText;
     private boolean shareArrow = true;
+    private int type = 0;
+    private int additionalBottomOffset = 0;
 
     public PreviewButtons(Context context) {
+        this(context, 0);
+    }
+
+    public PreviewButtons(Context context, int type) {
         super(context);
+
+        this.type = type;
 
         shadowView = new View(context);
         shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] { 0x66000000, 0x00000000 }));
@@ -67,11 +83,43 @@ public class PreviewButtons extends FrameLayout {
         addButton(BUTTON_TEXT, R.drawable.msg_photo_text2, LocaleController.getString(R.string.AccDescrPlaceText));
         addButton(BUTTON_ADJUST, R.drawable.msg_photo_settings, LocaleController.getString(R.string.AccDescrPhotoAdjust));
 
+        if (type == 1) {
+            //additionalBottomOffset = AndroidUtilities.navigationBarHeight;
+
+            //addButton(BUTTON_CROP, R.drawable.media_crop, LocaleController.getString(R.string.CropImage));
+        }
+
         shareButton = new ShareButtonView(context, shareText = LocaleController.getString(R.string.Send), shareArrow = true);
         shareButton.setContentDescription(LocaleController.getString(R.string.Send));
         addView(shareButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
+        pickerViewSendButton = new ImageView(context);
+        pickerViewSendButton.setScaleType(ImageView.ScaleType.CENTER);
+        Drawable pickerViewSendDrawable = Theme.createSimpleSelectorCircleDrawable(dp(48), getThemedColor(Theme.key_chat_editMediaButton), getThemedColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_chat_editMediaButton));
+        pickerViewSendButton.setBackgroundDrawable(pickerViewSendDrawable);
+        pickerViewSendButton.setImageResource(R.drawable.msg_input_send_mini);
+        pickerViewSendButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
+        addView(pickerViewSendButton, LayoutHelper.createFrame(48, 48));
+        pickerViewSendButton.setContentDescription(getString("Send", R.string.Send));
+        ScaleStateListAnimator.apply(pickerViewSendButton);
+        pickerViewSendButton.setOnClickListener(view -> {
+            if (!doneDisabled && appearing && onClickListener != null) {
+                onClickListener.run(BUTTON_SEND);
+            }
+        });
+
+        pickerViewSendButton.setOnLongClickListener(v -> {
+            if (!doneDisabled && appearing && onLongClickListener != null) {
+                onLongClickListener.run(BUTTON_SEND);
+            }
+            return true;
+        });
+
         updateAppearT();
+    }
+
+    private int getThemedColor(int key) {
+        return Theme.getColor(key);
     }
 
     public void setFiltersVisible(boolean visible) {
@@ -117,8 +165,11 @@ public class PreviewButtons extends FrameLayout {
         final int h = bottom - top;
 
         shadowView.layout(0, 0, w, h);
-        shareButton.layout(w - shareButton.getMeasuredWidth(), (h - shareButton.getMeasuredHeight()) / 2, w, (h + shareButton.getMeasuredHeight()) / 2);
-
+        if (type == 0) {
+            shareButton.layout(w - shareButton.getMeasuredWidth(), (h - shareButton.getMeasuredHeight()) / 2, w, (h + shareButton.getMeasuredHeight()) / 2);
+        } else {
+            pickerViewSendButton.layout(w - pickerViewSendButton.getMeasuredWidth() - AndroidUtilities.dp(10), (h - pickerViewSendButton.getMeasuredHeight()) / 2, w - AndroidUtilities.dp(10), (h + pickerViewSendButton.getMeasuredHeight()) / 2);
+        }
         int W = w - dp(10 + 10 + 12.33f) - shareButton.getMeasuredWidth();
         int visibleButtons = 0;
         for (int i = 0; i < buttons.size(); ++i) {
@@ -143,11 +194,16 @@ public class PreviewButtons extends FrameLayout {
         this.onClickListener = onClickListener;
     }
 
+    private Utilities.Callback<Integer> onLongClickListener;
+    public void setOnLongClickListener(Utilities.Callback<Integer> onLongClickListener) {
+        this.onLongClickListener = onLongClickListener;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
             MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(dp(52), MeasureSpec.EXACTLY)
+            MeasureSpec.makeMeasureSpec(dp(52) + additionalBottomOffset, MeasureSpec.EXACTLY)
         );
     }
 
@@ -208,6 +264,12 @@ public class PreviewButtons extends FrameLayout {
             child.setAlpha(t);
             child.setTranslationY((1f - t) * dp(24));
         }
+    }
+
+    boolean doneDisabled = false;
+    public void setDoneDisabled() {
+        doneDisabled = true;
+        pickerViewSendButton.setImageDrawable(new CircularProgressDrawable());
     }
 
     private class ShareButtonView extends View {
@@ -361,7 +423,7 @@ public class PreviewButtons extends FrameLayout {
             setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
 
             setOnClickListener(e -> {
-                if (appearing && onClickListener != null) {
+                if (!doneDisabled && appearing && onClickListener != null) {
                     onClickListener.run(id);
                 }
             });

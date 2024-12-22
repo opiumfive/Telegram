@@ -8,8 +8,6 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -99,6 +97,7 @@ public class MediaCodecVideoConvertor {
         boolean muted = convertVideoParams.muted;
         float volume = convertVideoParams.volume;
         boolean isStory = convertVideoParams.isStory;
+        boolean isForceTryHevc = convertVideoParams.isForceTryHevc;
         StoryEntry.HDRInfo hdrInfo = convertVideoParams.hdrInfo;
 
         FileLog.d("convertVideoInternal original=" + originalWidth + "x" + originalHeight + "  result=" + resultWidth + "x" + resultHeight + " " + avatarStartTime);
@@ -110,7 +109,7 @@ public class MediaCodecVideoConvertor {
         String selectedEncoderName = null;
 
         final boolean isWebm = convertVideoParams.isSticker;
-        boolean shouldUseHevc = isStory;
+        boolean shouldUseHevc = isStory || isForceTryHevc;
         outputMimeType = isWebm ? "video/x-vnd.on2.vp9" : shouldUseHevc ? "video/hevc" : "video/avc";
 
         boolean canBeBrokenEncoder = false;
@@ -527,8 +526,8 @@ public class MediaCodecVideoConvertor {
                                 );
                             } else if (!isRound && Math.max(resultHeight, resultHeight) / (float) Math.max(originalHeight, originalWidth) < 0.9f) {
                                 outputSurface.changeFragmentShader(
-                                        createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, isStory ? 0 : 3),
-                                        createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, isStory ? 0 : 3),
+                                        createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, isStory || isForceTryHevc ? 0 : 3),
+                                        createFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, isStory || isForceTryHevc ? 0 : 3),
                                         false
                                 );
                             }
@@ -1450,6 +1449,7 @@ public class MediaCodecVideoConvertor {
         boolean muted;
         float volume;
         boolean isStory;
+        boolean isForceTryHevc;
         StoryEntry.HDRInfo hdrInfo;
         public ArrayList<MixedSoundInfo> soundInfos = new ArrayList<MixedSoundInfo>();
         int account;
@@ -1502,6 +1502,7 @@ public class MediaCodecVideoConvertor {
             params.muted = info.muted;
             params.volume = info.volume;
             params.isStory = info.isStory;
+            params.isForceTryHevc = info.forceTryHevc;
             params.hdrInfo = info.hdrInfo;
             params.isDark = info.isDark;
             params.wallpaperPeerId = info.wallpaperPeerId;

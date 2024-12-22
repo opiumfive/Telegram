@@ -76,6 +76,10 @@ public class ReactionWidgetEntityView extends EntityView {
         super.onMeasure(MeasureSpec.makeMeasureSpec((int) baseSize.width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((int) baseSize.height, MeasureSpec.EXACTLY));
     }
 
+    public void getReactionBounds(RectF b) {
+        reactionHolder.getBounds(b);
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         int padding = getPadding();

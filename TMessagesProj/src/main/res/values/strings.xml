@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegram Fix</string>
+    <string name="AppNameBeta">Telegram Fix Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -6151,6 +6151,11 @@
     <string name="StoryPrivacyHint">Set who can view your story</string>
     <string name="StoryHintPinchToZoom">Pinch to zoom</string>
     <string name="StoryHintSwipeToZoom">Swipe to zoom</string>
+    <string name="RecorderHintSwipeUpToZoom">Swipe up to zoom</string>
+    <string name="RecorderSoundMuted">Sound is now muted.</string>
+    <string name="RecorderSoundNotMuted">Sound is now not muted.</string>
+    <string name="RecorderOriginalSoundMuted">Original audio will be removed.</string>
+    <string name="RecorderOriginalSoundNotMuted">Original audio will be preserved.</string>
     <string name="SaveImage">Save Image</string>
     <string name="SaveVideo">Save Video</string>
     <string name="SaveToProfile">Save to Profile</string>

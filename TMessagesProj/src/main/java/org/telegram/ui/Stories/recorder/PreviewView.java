@@ -100,9 +100,15 @@ public class PreviewView extends FrameLayout {
     private final BlurringShader.BlurManager blurManager;
     private final TextureViewHolder textureViewHolder;
 
-    public PreviewView(Context context, BlurringShader.BlurManager blurManager, TextureViewHolder textureViewHolder) {
-        super(context);
+    private int type = 0;
 
+    public PreviewView(Context context, BlurringShader.BlurManager blurManager, TextureViewHolder textureViewHolder) {
+        this(context, blurManager, textureViewHolder, 0);
+    }
+
+    public PreviewView(Context context, BlurringShader.BlurManager blurManager, TextureViewHolder textureViewHolder, int type) {
+        super(context);
+        this.type = type;
         this.blurManager = blurManager;
         this.textureViewHolder = textureViewHolder;
 
@@ -305,7 +311,11 @@ public class PreviewView extends FrameLayout {
                 } else {
                     duration = entry.audioDuration;
                 }
-                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(duration, TimelineView.MAX_SELECT_DURATION) / (float) entry.audioDuration);
+                long max = TimelineView.MAX_SELECT_DURATION;
+                if (type == 1) {
+                    max = TimelineView.MAX_SELECT_DURATION_RECORD;
+                }
+                entry.audioRight = entry.audioDuration == 0 ? 1 : Math.min(1, Math.min(duration, max) / (float) entry.audioDuration);
             }
         }
         setupAudio(entry, animated);

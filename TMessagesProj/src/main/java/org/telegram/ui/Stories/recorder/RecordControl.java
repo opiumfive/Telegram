@@ -94,7 +94,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
     private final static int WHITE = 0xFFFFFFFF;
     private final static int RED = 0xFFF73131;
-    private final static int BG = 0x64000000;
+    private static int BG = 0x64000000;
 
     private final Paint mainPaint =          new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint outlinePaint =       new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -126,8 +126,20 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private final Point check2 = new Point(-dpf2(8.5f/3.0f), dpf2(26/3.0f));
     private final Point check3 = new Point(dpf2(29/3.0f), dpf2(-11/3.0f));
 
+    private int type = 0;
+
     public RecordControl(Context context) {
+        this(context, 0);
+    }
+
+    public RecordControl(Context context, int type) {
         super(context);
+
+        this.type = type;
+
+        if (type == 1) {
+            BG = 0x40000000;
+        }
 
         setWillNotDraw(false);
 
@@ -167,12 +179,12 @@ public class RecordControl extends View implements FlashViews.Invertable {
         noGalleryDrawable.setFullsize(false);
         noGalleryDrawable.setIconSize(dp(24), dp(24));
 
-        flipDrawableWhite = context.getResources().getDrawable(R.drawable.msg_photo_switch2).mutate();
+        flipDrawableWhite = context.getResources().getDrawable(type == 0 ? R.drawable.msg_photo_switch2 : R.drawable.flip).mutate();
         flipDrawableWhite.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
-        flipDrawableBlack = context.getResources().getDrawable(R.drawable.msg_photo_switch2).mutate();
+        flipDrawableBlack = context.getResources().getDrawable(type == 0 ? R.drawable.msg_photo_switch2 : R.drawable.flip).mutate();
         flipDrawableBlack.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
 
-        unlockDrawable = context.getResources().getDrawable(R.drawable.msg_filled_unlockedrecord).mutate();
+        unlockDrawable = context.getResources().getDrawable(type == 0 ? R.drawable.msg_filled_unlockedrecord : R.drawable.my_unlock).mutate();
         unlockDrawable.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
         lockDrawable = context.getResources().getDrawable(R.drawable.msg_filled_lockedrecord).mutate();
         lockDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
@@ -466,7 +478,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (type == 0 && duration >= MAX_DURATION) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;
@@ -490,7 +502,13 @@ public class RecordControl extends View implements FlashViews.Invertable {
                 canvas.save();
                 canvas.scale(scale, scale, leftCx, cy);
                 canvas.drawCircle(leftCx, cy, dp(22), buttonPaint);
+
+                if (type == 1) {
+                    canvas.save();
+                    canvas.scale(1.2f, 1.2f, leftCx, cy);
+                }
                 unlockDrawable.draw(canvas);
+                if (type == 1) canvas.restore();
                 canvas.restore();
             }
         }

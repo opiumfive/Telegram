@@ -4243,6 +4243,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 reply = null;
             }
             newMsgObj = new MessageObject(currentAccount, newMsg, reply, true, true);
+            if (videoEditedInfo != null && videoEditedInfo.forceApplyOnSend) {
+                newMsgObj.videoEditedInfo = videoEditedInfo;
+            }
             newMsgObj.sendAnimationData = sendAnimationData;
             newMsgObj.wasJustSent = true;
             newMsgObj.scheduled = scheduleDate != 0;
@@ -8804,6 +8807,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         videoEditedInfo.originalHeight = attributeVideo.h;
                                     } else {
                                         attributeVideo.duration = (int) (videoEditedInfo.estimatedDuration / 1000);
+                                        if (videoEditedInfo.forceApplyOnSend) {
+                                            attributeVideo.duration = attributeVideo.duration / 1000.0;
+                                        }
                                     }
                                     int w, h;
                                     int rotation = videoEditedInfo.rotationValue;
@@ -9516,6 +9522,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         attributeVideo.w = videoEditedInfo.resultWidth;
                         attributeVideo.h = videoEditedInfo.resultHeight;
                         attributeVideo.duration = videoEditedInfo.estimatedDuration / 1000.0;
+                        if (videoEditedInfo.forceApplyOnSend) {
+                            attributeVideo.duration = attributeVideo.duration / 1000.0;
+                        }
                         document.size = videoEditedInfo.estimatedSize;
                     } else if (videoEditedInfo != null && videoEditedInfo.needConvert()) {
                         if (videoEditedInfo.muted) {
@@ -9525,6 +9534,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             videoEditedInfo.originalHeight = attributeVideo.h;
                         } else {
                             attributeVideo.duration = videoEditedInfo.estimatedDuration / 1000.0;
+                            if (videoEditedInfo.forceApplyOnSend) {
+                                attributeVideo.duration = attributeVideo.duration / 1000.0;
+                            }
                         }
 
                         int w, h;

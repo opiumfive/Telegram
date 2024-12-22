@@ -358,6 +358,12 @@ public class CaptionContainerView extends FrameLayout {
     private final Runnable textChangeRunnable = () -> onTextChange();
     protected void onTextChange() {}
 
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (editText != null && editText.getEditText() != null) editText.getEditText().setEnabled(enabled);
+    }
+
     public void invalidateBlur() {
         invalidate();
         editText.getEditText().invalidate();
@@ -452,8 +458,8 @@ public class CaptionContainerView extends FrameLayout {
             @Override
             public void drawRoundRect(Canvas canvas, Rect rectTmp, float radius) {
                 rectF.set(rectTmp);
-                if (customBlur()) {
-                    drawBlur(mentionBackgroundBlur, canvas, rectF, radius, false, -mentionContainer.getX(), -mentionContainer.getY(), false, 1.0f);
+                if (customBlur()) {                                                                                                  // fix problem with scrolling mentions (this bug also in prod)
+                    drawBlur(mentionBackgroundBlur, canvas, rectF, radius, false, -mentionContainer.getX(), -mentionContainer.getY() + mentionContainer.getTranslationY(), false, 1.0f);
                 } else {
                     Paint blurPaint = mentionBackgroundBlur.getPaint(1f);
                     if (blurPaint == null) {

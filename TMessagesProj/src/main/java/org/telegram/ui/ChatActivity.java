@@ -41038,4 +41038,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatActivity.hashtagSearchTabs == null) return 0;
         return chatActivity.hashtagSearchTabs.getCurrentHeight();
     }
+
+    public View getAttachView() {
+        return chatActivityEnterView == null ? null : chatActivityEnterView.getAttachButton();
+    }
 }

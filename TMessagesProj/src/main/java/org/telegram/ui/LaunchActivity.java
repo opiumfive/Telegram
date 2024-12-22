@@ -197,6 +197,7 @@ import org.telegram.ui.Stars.SuperRippleFallback;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoryViewer;
+import org.telegram.ui.Stories.recorder.CameraRecorder;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
 import org.telegram.ui.bots.BotWebViewSheet;
@@ -1676,6 +1677,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             ArticleViewer.getInstance().close(false, true);
         }
         StoryRecorder.destroyInstance();
+        CameraRecorder.destroyInstance();
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null && messageObject.isRoundVideo()) {
             MediaController.getInstance().cleanupPlayer(true, true);
@@ -1761,6 +1763,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 PhotoViewer.getInstance().closePhoto(false, true);
             }
             StoryRecorder.destroyInstance();
+            CameraRecorder.destroyInstance();
 //            dismissAllWeb();
         }
         if (webviewShareAPIDoneListener != null) {
@@ -3464,6 +3467,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             ArticleViewer.getInstance().close(false, true);
         }
         StoryRecorder.destroyInstance();
+        CameraRecorder.destroyInstance();
         if (GroupCallActivity.groupCallInstance != null) {
             GroupCallActivity.groupCallInstance.dismiss();
         }
@@ -3741,6 +3745,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         ArticleViewer.getInstance().close(false, true);
                     }
                     StoryRecorder.destroyInstance();
+                    CameraRecorder.destroyInstance();
                     if (GroupCallActivity.groupCallInstance != null) {
                         GroupCallActivity.groupCallInstance.dismiss();
                     }
@@ -4270,6 +4275,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 ArticleViewer.getInstance().close(false, true);
                             }
                             StoryRecorder.destroyInstance();
+                            CameraRecorder.destroyInstance();
                             if (GroupCallActivity.groupCallInstance != null) {
                                 GroupCallActivity.groupCallInstance.dismiss();
                             }
@@ -6342,6 +6348,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             PhotoViewer.getInstance().onPause();
         }
         StoryRecorder.onPause();
+        CameraRecorder.onPause();
 
         if (VoIPFragment.getInstance() != null) {
             VoIPFragment.onPause();
@@ -6503,6 +6510,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             PhotoViewer.getInstance().onResume();
         }
         StoryRecorder.onResume();
+        CameraRecorder.onResume();
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null && MediaController.getInstance().isMessagePaused()) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
