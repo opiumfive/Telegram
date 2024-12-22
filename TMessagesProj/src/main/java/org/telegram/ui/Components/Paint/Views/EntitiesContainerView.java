@@ -26,9 +26,15 @@ public class EntitiesContainerView extends FrameLayout {
     private float previousScale = 1.0f;
     private float previousAngle;
     private boolean hasTransformed;
+    private int type = 0;
 
     public EntitiesContainerView(Context context, EntitiesContainerViewDelegate entitiesContainerViewDelegate) {
+        this(context, entitiesContainerViewDelegate, 0);
+    }
+
+    public EntitiesContainerView(Context context, EntitiesContainerViewDelegate entitiesContainerViewDelegate, int type) {
         super(context);
+        this.type = type;
         delegate = entitiesContainerViewDelegate;
     }
 
@@ -105,7 +111,7 @@ public class EntitiesContainerView extends FrameLayout {
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        if (drawForThumb && child instanceof ReactionWidgetEntityView) {
+        if (type == 0 && drawForThumb && child instanceof ReactionWidgetEntityView) {
             return true;
         }
         return super.drawChild(canvas, child, drawingTime);

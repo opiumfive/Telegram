@@ -97,6 +97,8 @@ public class VideoEditedInfo {
     public boolean needUpdateProgress = false;
     public boolean shouldLimitFps = true;
     public boolean fromCamera;
+    public boolean forceApplyOnSend = false;
+    public boolean forceTryHevc = false;
 
     public ArrayList<MediaCodecVideoConvertor.MixedSoundInfo> mixedSoundInfos = new ArrayList<>();
 
@@ -142,6 +144,7 @@ public class VideoEditedInfo {
         public static final byte TYPE_LINK = 7;
         public static final byte TYPE_WEATHER = 8;
 
+        public boolean forceDraw = false;
         public byte type;
         public byte subType;
         public float x;

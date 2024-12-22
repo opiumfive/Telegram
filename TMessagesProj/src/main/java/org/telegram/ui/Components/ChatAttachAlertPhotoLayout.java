@@ -87,6 +87,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -104,6 +105,11 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.AlbumButton;
+import org.telegram.ui.Stories.recorder.CameraRecorder;
+
+import org.telegram.ui.Stories.recorder.SentVideoSaveController;
+import org.telegram.ui.Stories.recorder.StoryEntry;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -2291,6 +2297,125 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     boolean cameraExpanded;
     private void openCamera(boolean animated) {
+        boolean usual = !(parentAlert.baseFragment instanceof ChatActivity);
+
+        if (!usual) {
+            if (cameraView != null) {
+                Object obj = cameraView.getCameraSessionObject();
+                if (obj instanceof CameraSession) {
+                    CameraController.getInstance().close((CameraSession) obj, null, null);
+                } else {
+                    pauseCameraPreview();
+                }
+            }
+            CameraRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount)
+                    .closeToWhenSent(new CameraRecorder.ClosingViewProvider() {
+
+                        @Override
+                        public CameraRecorder.SourceView getView() {
+                            if (parentAlert == null || parentAlert.baseFragment == null || !(parentAlert.baseFragment instanceof ChatActivity)) {
+                                return CameraRecorder.SourceView.fromImaginaryView(new int[] {
+                                                AndroidUtilities.getRealScreenSize().x - AndroidUtilities.dp(110),
+                                                AndroidUtilities.getRealScreenSize().y - AndroidUtilities.dp(60) - AndroidUtilities.dp(100) * 16 / 9
+                                        },
+                                        AndroidUtilities.dp(100),
+                                        AndroidUtilities.dp(100) * 16 / 9);
+                            }
+                            return CameraRecorder.SourceView.fromView(((ChatActivity) parentAlert.baseFragment).getAttachView());
+                        }
+
+                        @Override
+                        public void onCancel() {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                try {
+                                    if (parentAlert.isShowing() && !parentAlert.isDismissed() && !PhotoViewer.getInstance().isVisible() && cameraView != null) {
+                                        resumeCameraPreview();
+                                        cameraView.resetCamera();
+                                    }
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            }, 1000);
+                        }
+
+                        private void sendPhotoVideo(boolean notify, int schedule, boolean asFile) {
+                            parentAlert.sent = true;
+                            if (cameraPhotos.isEmpty() || parentAlert.destroyed) {
+                                return;
+                            }
+                            if (!(parentAlert.baseFragment instanceof ChatActivity) || !((ChatActivity) parentAlert.baseFragment).isSecretChat()) {
+                                for (int a = 0, size = cameraPhotos.size(); a < size; a++) {
+                                    MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) cameraPhotos.get(a);
+                                    if (photoEntry.ttl > 0) {
+                                        continue;
+                                    }
+                                    AndroidUtilities.addMediaToGallery(photoEntry.path);
+                                }
+                            }
+                            parentAlert.applyCaption();
+                            closeCamera(false);
+                            parentAlert.delegate.didPressedButton(8, true, notify, schedule, 0, parentAlert.isCaptionAbove(), asFile);
+                            cameraPhotos.clear();
+                            selectedPhotosOrder.clear();
+                            selectedPhotos.clear();
+                            adapter.notifyDataSetChanged();
+                            cameraAttachAdapter.notifyDataSetChanged();
+                            parentAlert.dismiss(true);
+                        }
+
+                        @Override
+                        public void sendPressed(File outputFile, File thumb, StoryEntry entry, boolean notify, int schedule, boolean asFile) {
+                            boolean usePhotoViewer = false;
+                            File out = outputFile == null ? StoryEntry.makeCacheFile(UserConfig.selectedAccount, true) : outputFile;
+                            String path = out.getAbsolutePath();
+                            if (entry.wouldBeVideo()) {
+                                entry.getVideoEditedInfo((info) -> {
+                                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, path, 0, true, entry.width, entry.height, 0);
+                                    info.forceApplyOnSend = true;
+                                    info.isStory = false;
+                                    photoEntry.editedInfo = info;
+                                    photoEntry.caption = entry.caption;
+                                    photoEntry.ttl = entry.period;
+                                    photoEntry.duration = (int) (info.estimatedDuration / 1000f);
+                                    photoEntry.thumbPath = thumb != null ? thumb.getAbsolutePath() : entry.thumbPath;
+                                    if (!usePhotoViewer) {
+                                        cameraPhotos.add(photoEntry);
+                                        selectedPhotos.put(photoEntry.imageId, photoEntry);
+                                        selectedPhotosOrder.add(photoEntry.imageId);
+                                        SentVideoSaveController.getInstance().startedUploading(path);
+                                        sendPhotoVideo(notify, schedule, asFile);
+                                    } else {
+                                        openPhotoViewer(photoEntry, false, false);
+                                    }
+                                });
+                            } else {
+                                MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, path, entry.orientation == -1 ? 0 : entry.orientation, false, entry.width, entry.height, 0);
+                                photoEntry.canDeleteAfter = true;
+                                if (!usePhotoViewer) {
+                                    Utilities.themeQueue.postRunnable(() -> {
+                                        entry.buildPhoto(out);
+                                        AndroidUtilities.runOnUIThread(() -> {
+                                            photoEntry.thumbPath = thumb != null ? thumb.getAbsolutePath() : entry.thumbPath;
+                                            photoEntry.caption = entry.caption;
+                                            photoEntry.ttl = entry.period;
+                                            cameraPhotos.add(photoEntry);
+                                            selectedPhotos.put(photoEntry.imageId, photoEntry);
+                                            selectedPhotosOrder.add(photoEntry.imageId);
+                                            MediaController.saveFile(path, getContext(), 0, null, null, uri -> {}, false);
+                                            sendPhotoVideo(notify, schedule, asFile);
+                                        });
+                                    });
+                                } else {
+                                    openPhotoViewer(photoEntry, false, false);
+                                }
+                            }
+                        }
+                    })
+                    .open(CameraRecorder.SourceView.fromCameraView(cameraCell, cameraView), animated, ((ChatActivity) parentAlert.baseFragment).getDialogId());
+            return;
+        }
+
+
         if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
             return;
         }

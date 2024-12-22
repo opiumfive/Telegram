@@ -133,6 +133,10 @@ public class ReactionImageHolder {
         this.bounds.set(bounds);
     }
 
+    public void getBounds(RectF bounds) {
+        bounds.set(this.bounds.left, this.bounds.top, this.bounds.right, this.bounds.bottom);
+    }
+
     public void onAttachedToWindow(boolean attached) {
         this.attached = attached;
         if (attached) {

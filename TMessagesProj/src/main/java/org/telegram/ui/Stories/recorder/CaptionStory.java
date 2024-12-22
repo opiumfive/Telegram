@@ -3,6 +3,7 @@ package org.telegram.ui.Stories.recorder;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.ActionBar.Theme.RIPPLE_MASK_CIRCLE_20DP;
 
 import android.content.Context;
@@ -49,6 +50,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.WaveDrawable;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 public class CaptionStory extends CaptionContainerView {
 
@@ -61,12 +63,22 @@ public class CaptionStory extends CaptionContainerView {
     private boolean periodVisible = true;
 
     public static final int[] periods = new int[] { 6 * 3600, 12 * 3600, 86400, 2 * 86400 };
+    private final int SHOW_ONCE = 0x7FFFFFFF;
+    private final int[] values = new int[] { SHOW_ONCE, 3, 10, 30, 0 };
     private int periodIndex = 0;
 
     private Drawable flipButton;
+    private int type = 0;
+    private int timer = 0;
 
     public CaptionStory(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
+        this(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager, 0);
+    }
+
+    public CaptionStory(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager, int type) {
         super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager);
+
+        this.type = type;
 
         roundButton = new ImageView(context);
         roundButtonBounce = new ButtonBounce(roundButton);
@@ -82,9 +94,42 @@ public class CaptionStory extends CaptionContainerView {
         periodButton.setImageDrawable(periodDrawable = new PeriodDrawable());
         periodButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, RIPPLE_MASK_CIRCLE_20DP, dp(18)));
         periodButton.setScaleType(ImageView.ScaleType.CENTER);
-        setPeriod(86400, false);
+        if (type == 0) {
+            setPeriod(86400, false);
+        } else {
+            periodDrawable.setValue(timer == SHOW_ONCE ? 1 : Math.max(1, timer), timer > 0, false);
+        }
         addView(periodButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 11 + 44 - 4, 10));
         periodButton.setOnClickListener(e -> {
+            if (type == 1) {
+                if (periodPopup != null && periodPopup.isShown()) {
+                    periodPopup.dismiss();
+                    periodPopup = null;
+                    return;
+                }
+                //hint.hide();
+
+                periodPopup = ItemOptions.makeOptions(rootView, new DarkThemeResourceProvider(), periodButton);
+                periodPopup.setDimAlpha(0);
+                periodPopup.addText(getString(R.string.TimerPeriodHint), 13, dp(200));
+                periodPopup.addGap();
+                for (int value : values) {
+                    String text;
+                    if (value == 0) {
+                        text = getString(R.string.TimerPeriodDoNotDelete);
+                    } else if (value == SHOW_ONCE) {
+                        text = getString(R.string.TimerPeriodOnce);
+                    } else {
+                        text = LocaleController.formatPluralString("Seconds", value);
+                    }
+                    periodPopup.add(0, text, () -> changeTimer(value));
+                    if (this.timer == value) {
+                        periodPopup.putCheck();
+                    }
+                }
+                periodPopup.show();
+                return;
+            }
             if (periodPopup != null && periodPopup.isShown()) {
                 return;
             }
@@ -125,6 +170,18 @@ public class CaptionStory extends CaptionContainerView {
             }
             periodPopup.setDimAlpha(0).show();
         });
+    }
+
+    private void changeTimer(int value) {
+        if (this.timer == value) {
+            return;
+        }
+        this.timer = value;
+        if (onPeriodUpdate != null) {
+            onPeriodUpdate.run(value);
+        }
+        periodDrawable.setValue(timer == SHOW_ONCE ? 1 : Math.max(1, timer), timer > 0, true);
+        invalidate();
     }
 
     private void checkFlipButton() {
@@ -509,6 +566,17 @@ public class CaptionStory extends CaptionContainerView {
         if (!show) {
             periodButton.setVisibility(periodVisible ? View.VISIBLE : View.GONE);
             roundButton.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (periodButton != null) {
+            periodButton.setEnabled(enabled);
+        }
+        if (roundButton != null) {
+            roundButton.setEnabled(enabled);
         }
     }
 

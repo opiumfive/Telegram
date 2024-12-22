@@ -1525,10 +1525,16 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
     private boolean wasKeyboardVisible;
 
     public static int savedPosition = 1;
+    private int type = 0;
 
     public EmojiBottomSheet(Context context, boolean onlyStickers, Theme.ResourcesProvider resourcesProvider, boolean greeting) {
+        this(context, onlyStickers, resourcesProvider, greeting, 0);
+    }
+
+    public EmojiBottomSheet(Context context, boolean onlyStickers, Theme.ResourcesProvider resourcesProvider, boolean greeting, int type) {
         super(context, true, resourcesProvider);
 
+        this.type = type;
         this.onlyStickers = onlyStickers;
         this.greeting = greeting;
 
@@ -1591,10 +1597,10 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         if (!onlyStickers) {
             tabsView = new TabsView(context);
-            tabsView.setOnTypeSelected(type -> {
-                if (!viewPager.isManualScrolling() && viewPager.getCurrentPosition() != type) {
-                    viewPager.scrollToPosition(type);
-                    tabsView.setType(type);
+            tabsView.setOnTypeSelected(type2 -> {
+                if (!viewPager.isManualScrolling() && viewPager.getCurrentPosition() != type2) {
+                    viewPager.scrollToPosition(type2);
+                    tabsView.setType(type2);
                 }
             });
             tabsView.setType(viewPager.currentPosition);
@@ -2972,7 +2978,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             }
 
             public Button needsPremium() {
-                if (!UserConfig.getInstance(currentAccount).isPremium()) {
+                if (!UserConfig.getInstance(currentAccount).isPremium() && type == 0) {
                     lockDrawable = getContext().getResources().getDrawable(R.drawable.msg_mini_lock3).mutate();
                     lockDrawable.setColorFilter(new PorterDuffColorFilter(Theme.multAlpha(Color.WHITE, .60f), PorterDuff.Mode.SRC_IN));
                     lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

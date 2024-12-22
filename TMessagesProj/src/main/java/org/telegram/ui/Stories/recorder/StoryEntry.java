@@ -151,6 +151,7 @@ public class StoryEntry {
     public boolean allowScreenshots;
 
     public int period = 86400;
+    public int type = 0;
 
     public long botId;
     public String botLang = "";
@@ -211,6 +212,18 @@ public class StoryEntry {
                         if (isAnimated(e.document, e.documentAbsolutePath)) {
                             return true;
                         }
+                    }
+                }
+                if (type == 1) {
+                    if ((entity.type == VideoEditedInfo.MediaEntity.TYPE_WEATHER) && entity.entities != null && !entity.entities.isEmpty()) {
+                        for (int j = 0; j < entity.entities.size(); ++j) {
+                            VideoEditedInfo.EmojiEntity e = entity.entities.get(j);
+                            if (isAnimated(e.document, e.documentAbsolutePath)) {
+                                //return true;
+                            }
+                        }
+                    } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_REACTION) {
+                        //return true;
                     }
                 }
             }
@@ -300,6 +313,7 @@ public class StoryEntry {
                     if (file != null) {
                         try {
                             final Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), w, h, true, true);
+                            if (fileBitmap == null) continue;
                             canvas.save();
                             final RectF bounds = new RectF();
                             collage.parts.get(i).bounds(bounds, w, h);
@@ -886,6 +900,32 @@ public class StoryEntry {
         return entry;
     }
 
+    public static StoryEntry fromPhotoEntryRec(MediaController.PhotoEntry photoEntry) {
+        StoryEntry entry = new StoryEntry();
+        entry.period = 0;
+        entry.type = 1;
+        entry.file = new File(photoEntry.path);
+        entry.orientation = photoEntry.orientation;
+        entry.invert = photoEntry.invert;
+        entry.isVideo = photoEntry.isVideo;
+        entry.thumbPath = photoEntry.thumbPath;
+        entry.duration = photoEntry.duration * 1000L;
+        entry.left = 0;
+        entry.right = Math.min(1, 599_500f / entry.duration);
+        if (entry.isVideo && entry.thumbPath == null) {
+            entry.thumbPath = "vthumb://" + photoEntry.imageId;
+        }
+        entry.gradientTopColor = photoEntry.gradientTopColor;
+        entry.gradientBottomColor = photoEntry.gradientBottomColor;
+        entry.decodeBounds(entry.file.getAbsolutePath());
+        if (photoEntry.width > 0 && photoEntry.height > 0) {
+            entry.width = photoEntry.width;
+            entry.height = photoEntry.height;
+        }
+        entry.setupMatrix();
+        return entry;
+    }
+
     public boolean isCollage() {
         return collage != null && collageContent != null;
     }
@@ -907,7 +947,35 @@ public class StoryEntry {
             if (e.isVideo) {
                 entry.isVideo = true;
                 e.videoLeft = 0;
-                e.videoRight = Math.min(1.0f, 59_000.0f / e.duration);
+                e.videoRight = Math.min(1.0f, (59_000.0f) / e.duration);
+            }
+        }
+        if (entry.isVideo) {
+            entry.width = 720;
+            entry.height = 1280;
+            entry.resultWidth = 720;
+            entry.resultHeight = 1280;
+        } else {
+            entry.width = 1080;
+            entry.height = 1920;
+            entry.resultWidth = 1080;
+            entry.resultHeight = 1920;
+        }
+        entry.setupMatrix();
+        return entry;
+    }
+
+    public static StoryEntry asCollageRec(CollageLayout layout, ArrayList<StoryEntry> entries) {
+        StoryEntry entry = new StoryEntry();
+        entry.collage = layout;
+        entry.period = 0;
+        entry.type = 1;
+        entry.collageContent = entries;
+        for (StoryEntry e : entries) {
+            if (e.isVideo) {
+                entry.isVideo = true;
+                e.videoLeft = 0;
+                e.videoRight = Math.min(1.0f, (599_000.0f) / e.duration);
             }
         }
         if (entry.isVideo) {
@@ -1060,6 +1128,23 @@ public class StoryEntry {
         return entry;
     }
 
+    public static StoryEntry fromVideoShootRec(File file, String thumbPath, long duration) {
+        StoryEntry entry = new StoryEntry();
+        entry.type = 1;
+        entry.period = 0;
+        entry.fromCamera = true;
+        entry.file = file;
+        entry.fileDeletable = true;
+        entry.orientation = 0;
+        entry.invert = 0;
+        entry.isVideo = true;
+        entry.duration = duration;
+        entry.thumbPath = thumbPath;
+        entry.left = 0;
+        entry.right = Math.min(1, 599_500f / entry.duration);
+        return entry;
+    }
+
     public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -1115,7 +1200,13 @@ public class StoryEntry {
             info.backgroundPath = backgroundFile == null ? null : backgroundFile.getPath();
 
             long generalOffset = 0;
-            final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            if (encoderBitrate == 0) {
+                encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, false);
+                info.forceTryHevc = false;
+            } else {
+                info.forceTryHevc = true;
+            }
             if (isVideo && videoPath != null && !isCollage()) {
                 info.originalPath = videoPath;
                 info.isPhoto = false;
@@ -1198,6 +1289,9 @@ public class StoryEntry {
                 info.volume = 1f;
                 info.bitrate = -1;
                 info.framerate = 30;
+                if (type == 1 && encoderBitrate == 0) {
+                    encoderBitrate = 2488320;
+                }
                 info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
                 info.filterState = null;
             }

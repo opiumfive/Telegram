@@ -168,6 +168,9 @@ public class DualCameraView extends CameraView {
         }
 
         if (setDefault) {
+            if (useDualMaxHeight) {
+                matrix.postTranslate(-0.4f, 0);
+            }
             matrix.postConcat(toScreen);
 
             float w = getMeasuredWidth() * .43f;

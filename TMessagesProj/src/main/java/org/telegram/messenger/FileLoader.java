@@ -265,6 +265,16 @@ public class FileLoader extends BaseController {
         if (dir == null && type != FileLoader.MEDIA_DIR_CACHE) {
             dir = mediaDirs.get(FileLoader.MEDIA_DIR_CACHE);
         }
+        if (type == FileLoader.MEDIA_DIR_CACHE) {
+            // when google maps first opened (opening location alert, adding location widget to story/recording),
+            // it DELETES files from just ../cache/ folder, and breaks at least stories and recorder flow (deleting recorded files)
+            // so added one more folder, its not affected by google maps thanos
+            dir = new File(mediaDirs.get(type), "securedcache");
+            if (!dir.exists()) {
+                dir.mkdir();
+            }
+        }
+
         if (BuildVars.NO_SCOPED_STORAGE) {
             try {
                 if (dir != null && !dir.isDirectory()) {
@@ -274,6 +284,7 @@ public class FileLoader extends BaseController {
                 //don't prompt
             }
         }
+
         return dir;
     }
 

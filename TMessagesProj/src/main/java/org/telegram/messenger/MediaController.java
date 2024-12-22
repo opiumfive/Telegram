@@ -4712,8 +4712,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     dialog.setCancelable(true);
                     dialog.setOnCancelListener(d -> cancelled[0] = true);
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (!finished[0]) {
-                            dialog.show();
+                        try {
+                            // caught a crash here once
+                            if (!finished[0]) {
+                                dialog.show();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
                     }, 250);
                     progressDialog = dialog;

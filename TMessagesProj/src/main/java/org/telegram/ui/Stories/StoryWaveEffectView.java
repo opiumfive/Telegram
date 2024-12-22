@@ -2,32 +2,24 @@ package org.telegram.ui.Stories;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Interpolator;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.os.Message;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.DecelerateInterpolator;
-import android.view.inspector.WindowInspector;
 
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
@@ -200,7 +192,7 @@ public class StoryWaveEffectView extends TextureView implements TextureView.Surf
         canvas.drawRect(0, bitmap.getHeight() - AndroidUtilities.navigationBarHeight, bitmap.getWidth(), bitmap.getHeight(), navBarPaint);
         for (int i = 0; i < views.size(); ++i) {
             View view = views.get(i);
-            if (view != null && !(view instanceof StoryWaveEffectView) && !(view instanceof StoryRecorder.WindowView)) {
+            if (view != null && !(view instanceof StoryWaveEffectView) && !(view instanceof StoryRecorder.RecorderWindowView)) {
                 canvas.save();
                 canvas.translate(view.getX(), view.getY());
                 view.draw(canvas);

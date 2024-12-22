@@ -38,11 +38,21 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
     private long mLastTouchTime;
     private boolean mIsScrolling, mIsTouch;
     private ValueAnimator animator;
+    private int type;
 
     public PhotoVideoSwitcherView(Context context) {
-        super(context);
+        this(context, 0);
+    }
 
-        selectorPaint.setColor(0x32ffffff);
+    public PhotoVideoSwitcherView(Context context, int type) {
+        super(context);
+        this.type = type;
+        if (type == 1) {
+            selectorPaint.setColor(0x40000000);
+        } else {
+            selectorPaint.setColor(0x32ffffff);
+        }
+
         textPaint.setColor(0xffffffff);
 
         textPaint.setTypeface(AndroidUtilities.bold());
@@ -163,9 +173,10 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
         float x = getScrollCx();
 
         final int oy = -dp(1);
-        final int h = dp(26);
-        photoRect.set(x - dp(4 + 12 + 12) - photoTextWidth, cy - h / 2f + oy, x - dp(4), cy + h / 2f + oy);
-        videoRect.set(x + dp(4), cy - h / 2f + oy, x + dp(4 + 12 + 12) + videoTextWidth, cy + h / 2f + oy);
+        final int ox = type == 1 ? 2 : 0;
+        final int h = dp(type == 1 ? 30 : 26);
+        photoRect.set(x - dp(4 + 12 + 12 + ox) - photoTextWidth, cy - h / 2f + oy, x - dp(4 - ox), cy + h / 2f + oy);
+        videoRect.set(x + dp(4 - ox), cy - h / 2f + oy, x + dp(4 + 12 + 12 + ox) + videoTextWidth, cy + h / 2f + oy);
         AndroidUtilities.lerp(photoRect, videoRect, Utilities.clamp(mode, 1.025f, -.025f), selectorRect);
         canvas.drawRoundRect(selectorRect, h / 2f, h / 2f, selectorPaint);
 
@@ -251,7 +262,12 @@ public class PhotoVideoSwitcherView extends View implements FlashViews.Invertabl
     }
 
     public void setInvert(float invert) {
-        selectorPaint.setColor(ColorUtils.blendARGB(0x32ffffff, 0x20000000, invert));
+        if (type == 1) {
+            selectorPaint.setColor(ColorUtils.blendARGB(0x40000000, 0x20000000, invert));
+        } else {
+            selectorPaint.setColor(ColorUtils.blendARGB(0x32ffffff, 0x20000000, invert));
+        }
+
         textPaint.setColor(ColorUtils.blendARGB(0xffffffff, 0xff000000, invert));
     }
 }

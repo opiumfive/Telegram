@@ -978,7 +978,7 @@ public class BlurringShader {
                 return null;
             }
             Bitmap bitmap = manager.getBitmap();
-            if (bitmap == null) {
+            if (bitmap == null || bitmap.isRecycled()) { // caught a crash here once for using a recycled bitmap
                 return null;
             }
 

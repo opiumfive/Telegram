@@ -125,6 +125,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private CameraSessionWrapper cameraSessionRecording;
 
     private boolean useMaxPreview;
+    protected boolean useDualMaxHeight;
 
     private long lastDrawTime;
     private float focusProgress = 1.0f;
@@ -505,8 +506,15 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         pixelW = getMeasuredWidth();
         pixelH = getMeasuredHeight();
         if (pixelDualW <= 0) {
-            pixelDualW = getMeasuredWidth();
-            pixelDualH = getMeasuredHeight();
+
+            if (useDualMaxHeight) {
+                pixelDualH = getMeasuredHeight();
+                float aspectWidth = pixelDualH * 0.5625f;
+                pixelDualW = aspectWidth;
+            } else {
+                pixelDualW = getMeasuredWidth();
+                pixelDualH = getMeasuredHeight();
+            }
         }
     }
 
@@ -547,6 +555,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public void setUseMaxPreview(boolean value) {
         useMaxPreview = value;
+    }
+
+    public void setUseDualMaxHeight(boolean value) {
+        useDualMaxHeight = value;
     }
 
     public boolean hasFrontFaceCamera() {

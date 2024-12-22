@@ -67,7 +67,11 @@ import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.Paint.Views.LinkPreview;
 import org.telegram.ui.Components.Paint.Views.LocationMarker;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
+import org.telegram.ui.Components.Paint.Views.ReactionWidgetEntityView;
+import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.Size;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -1273,6 +1277,11 @@ public class TextureRenderer {
                     } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_LINK) {
                         initLinkEntity(entity);
                     }
+                    if (entity.type == VideoEditedInfo.MediaEntity.TYPE_WEATHER) {
+                        initLocationEntity(entity);
+                    } else if (entity.type == VideoEditedInfo.MediaEntity.TYPE_REACTION) {
+                        initReactionEntity(entity);
+                    }
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -1400,7 +1409,66 @@ public class TextureRenderer {
         editText.draw(canvas);
     }
 
+    private void initReactionEntity(VideoEditedInfo.MediaEntity entity) {
+        if (!entity.forceDraw) return;
+        Point pos = new Point(entity.viewWidth / 2f, entity.viewHeight / 2f);
+        Size baseSize = new Size(entity.viewWidth, entity.viewHeight);
+        ReactionWidgetEntityView reactionWidgetEntityView = new ReactionWidgetEntityView(ApplicationLoader.applicationContext, pos, baseSize);
+        reactionWidgetEntityView.setCurrentReaction(ReactionsLayoutInBubble.VisibleReaction.fromTL(entity.mediaArea.reaction), false);
+        if (entity.mediaArea.flipped) {
+            reactionWidgetEntityView.mirror(false);
+        }
+        if (entity.mediaArea.dark) {
+            reactionWidgetEntityView.changeStyle(false);
+        }
+
+        reactionWidgetEntityView.measure(View.MeasureSpec.makeMeasureSpec(entity.viewWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(entity.viewHeight, View.MeasureSpec.EXACTLY));
+        reactionWidgetEntityView.layout(0, 0, entity.viewWidth, entity.viewHeight);
+        float scale = entity.width * transformedWidth / entity.viewWidth;
+        int w = (int) (entity.viewWidth * scale), h = (int) (entity.viewHeight * scale), pad = 8;
+        entity.bitmap = Bitmap.createBitmap(w + pad + pad, h + pad + pad, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(entity.bitmap);
+        canvas.translate(pad, pad);
+        canvas.scale(scale, scale);
+        reactionWidgetEntityView.draw(canvas);
+        entity.additionalWidth = (2 * pad) * scale / transformedWidth;
+        entity.additionalHeight = (2 * pad) * scale / transformedHeight;
+        if (entity.entities.size() == 1) {
+            VideoEditedInfo.EmojiEntity e = entity.entities.get(0);
+            e.entity = new VideoEditedInfo.MediaEntity();
+            e.entity.text = e.documentAbsolutePath;
+            e.entity.subType = e.subType;
+
+            RectF bounds = new RectF();
+            reactionWidgetEntityView.getReactionBounds(bounds);
+
+            float tcx = entity.x + (bounds.centerX()) / entity.viewWidth * entity.width;
+            float tcy = entity.y + (bounds.centerY()) / entity.viewHeight * entity.height;
+
+            if (entity.rotation != 0) {
+                float mx = entity.x + entity.width / 2f;
+                float my = entity.y + entity.height / 2f;
+                float ratio = transformedWidth / (float) transformedHeight;
+                float x1 = tcx - mx;
+                float y1 = (tcy - my) / ratio;
+                tcx = (float) (x1 * Math.cos(-entity.rotation) - y1 * Math.sin(-entity.rotation)) + mx;
+                tcy = (float) (x1 * Math.sin(-entity.rotation) + y1 * Math.cos(-entity.rotation)) * ratio + my;
+            }
+
+            e.entity.width =  (float) bounds.width() / entity.viewWidth * entity.width;
+            e.entity.height = (float) bounds.height() / entity.viewHeight * entity.height;
+            e.entity.width *= LocationMarker.SCALE;
+            e.entity.height *= LocationMarker.SCALE;
+            e.entity.x = tcx - e.entity.width / 2f;
+            e.entity.y = tcy - e.entity.height / 2f;
+            e.entity.rotation = entity.rotation;
+
+            initStickerEntity(e.entity);
+        }
+    }
+
     private void initLocationEntity(VideoEditedInfo.MediaEntity entity) {
+        if (!entity.forceDraw && entity.type == VideoEditedInfo.MediaEntity.TYPE_WEATHER) return;
         final int variant = entity.type == VideoEditedInfo.MediaEntity.TYPE_LOCATION ? LocationMarker.VARIANT_LOCATION : LocationMarker.VARIANT_WEATHER;
         LocationMarker marker = new LocationMarker(ApplicationLoader.applicationContext, variant, entity.density, 0);
         marker.setIsVideo(true);
