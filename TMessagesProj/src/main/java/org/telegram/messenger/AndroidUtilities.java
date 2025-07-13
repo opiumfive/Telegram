@@ -171,6 +171,7 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stars.StarGiftPatterns;
 import org.telegram.ui.Stories.PeerStoriesView;
 import org.telegram.ui.Stories.StoryMediaAreasView;
 import org.telegram.ui.ThemePreviewActivity;
@@ -1393,6 +1394,53 @@ public class AndroidUtilities {
         }
         return media ? documentMediaIcons[0] : documentIcons[0];
     }
+
+    public static int calcCircularEdgeAverageColor(Bitmap bitmap) {
+        if (bitmap == null) return 0;
+        int targetSize = 32;
+        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, targetSize, targetSize, true);
+        int width = scaled.getWidth();
+        int height = scaled.getHeight();
+        int radius = Math.min(width, height) / 2;
+        int centerX = width / 2;
+        int centerY = height / 2;
+
+        int[] pixels = new int[width * height];
+        scaled.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        long rSum = 0, gSum = 0, bSum = 0;
+        int count = 0;
+
+        for (int angle = 0; angle < 360; angle += 6) {
+            double rad = Math.toRadians(angle);
+            int x = (int) (centerX + radius * Math.cos(rad));
+            int y = (int) (centerY + radius * Math.sin(rad));
+
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                int pixel = pixels[y * width + x];
+                int alpha = Color.alpha(pixel);
+                if (alpha == 0) continue;
+
+                rSum += Color.red(pixel);
+                gSum += Color.green(pixel);
+                bSum += Color.blue(pixel);
+                count++;
+            }
+        }
+
+        if (scaled != bitmap) {
+            scaled.recycle();
+        }
+
+        if (count == 0) return 0;
+
+        int r = (int) (rSum / count);
+        int g = (int) (gSum / count);
+        int b = (int) (bSum / count);
+
+        return Color.rgb(r, g, b);
+    }
+
 
     public static int calcBitmapColor(Bitmap bitmap) {
         if (bitmap == null) {
@@ -2724,6 +2772,7 @@ public class AndroidUtilities {
             ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
             isSmallScreen = null;
+            StarGiftPatterns.calcOrbits();
         } catch (Exception e) {
             FileLog.e(e);
         }

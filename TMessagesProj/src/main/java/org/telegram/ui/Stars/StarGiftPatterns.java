@@ -1,13 +1,13 @@
 package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class StarGiftPatterns {
 
@@ -209,4 +209,215 @@ public class StarGiftPatterns {
         }
     }
 
+    final static float[][] orbitConfigs = {
+            {AndroidUtilities.dp(25), AndroidUtilities.dp(9), 0.3f},
+            {AndroidUtilities.dp(35), AndroidUtilities.dp(7), 0.15f},
+            {AndroidUtilities.dp(35), AndroidUtilities.dp(8), 0.28f},
+            {AndroidUtilities.dp(45), AndroidUtilities.dp(7), 0.15f}
+    };
+
+    final static float[][] progressThresholds = {
+            {0.86f, 0.69f},
+            {0.86f, 0.61f},
+            {0.84f, 0.43f},
+            {0.84f, 0.38f}
+    };
+
+    public static void calcOrbits() {
+        int width = AndroidUtilities.displaySize.x;
+        int addition = width / 100;
+        int start = AndroidUtilities.dp(21) + addition / 2;
+
+        orbitConfigs[0][0] = start;
+        orbitConfigs[1][0] = start * 1.6f;
+        orbitConfigs[2][0] = start * 1.35f;
+        orbitConfigs[3][0] = start * 2.1f;
+    }
+
+    private static float stableY = 0;
+
+    public static void drawProfilePattern(Canvas canvas, Drawable pattern, float w, float h,
+                                          float alpha, View avatarContainer, float progress) {
+
+        if (alpha <= 0.0f || progress <= 0.0f) return;
+
+        final float ax = avatarContainer.getX();
+        final float ay = avatarContainer.getY();
+        final float aw = avatarContainer.getWidth() * avatarContainer.getScaleX();
+        final float ah = avatarContainer.getHeight() * avatarContainer.getScaleY();
+
+        final float acx = ax + aw / 2.0f;
+        final float acy = ay + ah / 2.0f;
+        final float centerX = w / 2.0f;
+        float centerY = progress < 1f ? stableY : acy;
+
+        if (progress == 1f) {
+            stableY = centerY;
+        }
+
+        for (int i = 3; i >= 0; i--) {
+            float radiusDp = orbitConfigs[i][0];
+            float sizeDp = orbitConfigs[i][1];
+            float orbitAlpha = orbitConfigs[i][2];
+            float startProgress = progressThresholds[i][0];
+            float endProgress = progressThresholds[i][1];
+
+            float factor;
+            if (progress >= startProgress) {
+                factor = 1.0f;
+            } else if (progress <= endProgress) {
+                factor = 0.0f;
+            } else {
+                factor = (progress - endProgress) / (startProgress - endProgress);
+            }
+
+            factor = CubicBezierInterpolator.EASE_OUT.getInterpolation(factor);
+
+            centerY = AndroidUtilities.lerp(stableY, acy, 1f - factor);
+
+            float currentRadius = radiusDp * factor;
+            float alphaFactor = factor;
+            float scaleFactor = factor;
+            if (i == 0) {
+                alphaFactor = Math.min(factor * 1.4f, 1f);
+            } else if (i == 1) {
+                alphaFactor = Math.min(factor * 3f, 1f);
+            } else if (i == 2) {
+                alphaFactor = Math.min(factor * 3f, 1f);
+            } else {
+                alphaFactor = Math.min(factor * 4f, 1f);
+            }
+            scaleFactor = alphaFactor;
+            sizeDp = sizeDp * scaleFactor;
+            float currentAlpha = orbitAlpha * alphaFactor * alpha;
+
+            if (currentAlpha <= 0 || currentRadius <= 0) continue;
+
+            switch (i) {
+                case 0:
+                    drawHexagonOrbit(canvas, pattern, centerX, centerY,
+                            currentRadius, factor, sizeDp,
+                            currentAlpha, true, 6, 1.12f, 1f);
+                    break;
+                case 1:
+                    drawRectangleOrbit(canvas, pattern, centerX, centerY,
+                            currentRadius, factor, sizeDp,
+                            currentAlpha, 1.0f);
+                    break;
+                case 2:
+                    drawPointsOrbit(canvas, pattern, centerX, centerY,
+                            currentRadius, sizeDp,
+                            currentAlpha, 1f);
+                    break;
+                case 3:
+                    drawHexagonOrbit(canvas, pattern, centerX, centerY,
+                            currentRadius, 1f, sizeDp,
+                            currentAlpha, false, 6, 0.7f, 0.7f);
+                    break;
+            }
+        }
+    }
+
+    private static void drawHexagonOrbit(Canvas canvas, Drawable pattern,
+                                         float centerX, float centerY,
+                                         float radius, float factor, float sizeDp,
+                                         float totalAlpha,
+                                         boolean pointyTop, int points,
+                                         float flattening, float flatteningOther) {
+        final float radiusPx = dpf2(radius);
+        final float sizePx = dpf2(sizeDp);
+        final double startAngle = pointyTop ? Math.PI / 2 : 0;
+        final double angleStep = 2 * Math.PI / points;
+
+        for (int i = 0; i < points; i++) {
+            double angle = startAngle + i * angleStep;
+            float x, y;
+
+            if (pointyTop) {
+                float addR = 0f;
+                if (i == 4 || i == 2) {
+                    addR = AndroidUtilities.dp(sizeDp) * (1f - factor);
+                }
+                x = centerX + (float) ((radiusPx - addR) * Math.cos(angle) * flattening);
+                y = centerY - (float) (radiusPx * Math.sin(angle) * flatteningOther);
+            } else {
+                float fOther = flatteningOther;
+                if (i == 0 || i == points / 2) {
+                    fOther = 1f;
+                }
+                x = centerX + (float) (radiusPx * Math.cos(angle) * fOther);
+                y = centerY - (float) (radiusPx * Math.sin(angle) * flattening);
+            }
+
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+    }
+
+    private static final float[][] corners = new float[4][2];
+    private static void drawRectangleOrbit(Canvas canvas, Drawable pattern,
+                                           float centerX, float centerY,
+                                           float radius, float factor, float sizeDp,
+                                           float totalAlpha, float flattening) {
+        final float sizePx = dpf2(sizeDp);
+        final float width = dpf2(radius);
+        final float height = dpf2(radius * 0.5f);
+
+        float addMult = AndroidUtilities.lerp(1f, 1.2f, 1f - factor);
+
+        corners[0][0] = width * flattening;
+        corners[0][1] = -height;
+        corners[1][0] = -width * flattening;
+        corners[1][1] = -height;
+        corners[2][0] = -width * flattening;
+        corners[2][1] = height;
+        corners[3][0] = width * flattening * addMult;
+        corners[3][1] = height * addMult;
+
+        for (float[] corner : corners) {
+            float x = centerX + corner[0];
+            float y = centerY + corner[1];
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+    }
+
+    private static final float[][] pointsOrbitCorners = new float[2][2];
+
+    private static void drawPointsOrbit(Canvas canvas, Drawable pattern,
+                                           float centerX, float centerY,
+                                           float radius, float sizeDp,
+                                           float totalAlpha, float flattening) {
+        final float sizePx = dpf2(sizeDp);
+        final float width = dpf2(radius);
+
+        pointsOrbitCorners[0][0] = width * flattening;
+        pointsOrbitCorners[0][1] = 0;
+        pointsOrbitCorners[1][0] = -width * flattening;
+        pointsOrbitCorners[1][1] = 0;
+
+        for (float[] corner : pointsOrbitCorners) {
+            float x = centerX + corner[0];
+            float y = centerY + corner[1];
+            drawPatternAt(canvas, pattern, x, y, sizePx, totalAlpha);
+        }
+    }
+
+    private static void drawPatternAt(Canvas canvas, Drawable pattern,
+                                      float x, float y, float sizePx,
+                                      float totalAlpha) {
+        int alphaInt = (int) (255 * totalAlpha);
+        if (alphaInt <= 0) return;
+        final float halfSize = sizePx / 2;
+        pattern.setBounds(
+            (int) (x - halfSize),
+            (int) (y - halfSize),
+            (int) (x + halfSize),
+            (int) (y + halfSize)
+        );
+        pattern.setAlpha(alphaInt);
+        pattern.draw(canvas);
+    }
+
+    private static float dpf2(float dp) {
+        return dp * AndroidUtilities.density;
+    }
 }

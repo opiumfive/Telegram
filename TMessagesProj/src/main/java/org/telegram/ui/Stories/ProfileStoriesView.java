@@ -409,10 +409,12 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     private float expandProgress;
     public void setExpandProgress(float progress) {
-        if (this.expandProgress != progress) {
+        setAlpha(1f - Math.min(progress / 0.3f, 1f));
+        invalidate();
+        /*if (this.expandProgress != progress) {
             this.expandProgress = progress;
             invalidate();
-        }
+        }*/
     }
 
     private float actionBarProgress;
@@ -485,6 +487,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (getAlpha() == 0f) return;
         float rright = rightAnimated.set(this.right);
         float avatarPullProgress = Utilities.clamp((avatarContainer.getScaleX() - 1f) / 0.4f, 1f, 0f);
         float insetMain = AndroidUtilities.lerp(AndroidUtilities.dpf2(4f), AndroidUtilities.dpf2(3.5f), avatarPullProgress);
